@@ -1,0 +1,29 @@
+{
+  "format": "wall_of_text",
+  "durationInFrames": 360,
+  "title": "The post that keeps selling after the first scroll",
+  "caption": "Built for dense proof, fast saves, and simple repurposing.",
+  "hashtags": ["#founder", "#marketing", "#content"],
+  "brand": {
+    "name": "Northstar CRM",
+    "handle": "@northstarcrm"
+  },
+  "theme": {
+    "background": "#111827",
+    "foreground": "#f8fafc",
+    "accent": "#facc15",
+    "secondary": "#0ea5e9",
+    "muted": "#cbd5e1"
+  },
+  "wallOfText": {
+    "headline": "Your best sales page is probably hiding in your support inbox.",
+    "body": "Start with the objection customers repeat most.\nShow the before-state in plain language.\nThen show the product moment that makes the problem disappear.\nThat becomes a save-worthy short instead of another generic ad.",
+    "sourceLabel": "UGC angle",
+    "broll": [
+      {
+        "src": "placeholder:social",
+        "label": "Customer proof"
+      }
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "format": "greenscreen_meme",
+  "durationInFrames": 300,
+  "title": "POV: the spreadsheet finally retired",
+  "caption": "Your ops team deserves better than tab archaeology.",
+  "hashtags": ["#ops", "#crm", "#startup"],
+  "brand": {
+    "name": "Northstar CRM",
+    "handle": "@northstarcrm"
+  },
+  "theme": {
+    "background": "#052e2b",
+    "foreground": "#f8fafc",
+    "accent": "#84cc16",
+    "secondary": "#14b8a6",
+    "muted": "#ccfbf1"
+  },
+  "greenscreenMeme": {
+    "background": {
+      "src": "placeholder:meme",
+      "label": "Spreadsheet chaos"
+    },
+    "persona": {
+      "src": "placeholder:persona",
+      "label": "Founder"
+    },
+    "caption": "When every lead finally has an owner",
+    "captionBar": "#052e2b",
+    "reactionLabel": "No more mystery leads"
+  }
+}

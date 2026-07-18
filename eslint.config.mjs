@@ -13,6 +13,7 @@ const config = [
     ignores: [
       ".next/**",
       ".pnpm-store/**",
+      ".renders/**",
       "coverage/**",
       "drizzle/**",
       "next-env.d.ts",
