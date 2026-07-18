@@ -8,17 +8,28 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-export default [
+const config = [
   {
     ignores: [
       ".next/**",
       ".pnpm-store/**",
       "coverage/**",
       "drizzle/**",
+      "next-env.d.ts",
       "node_modules/**",
       "playwright-report/**",
       "test-results/**",
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
 ];
+
+export default config;
