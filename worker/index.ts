@@ -9,21 +9,31 @@ import {
   type RenderJobData,
   type ScrapeJobData,
 } from "../src/lib/jobs/queues";
+import { renderVideoJob } from "./render";
+import { StubR2RenderedVideoUploader } from "./r2-upload";
 
 const connection = getRedisConnectionOptions();
+const renderedVideoUploader = new StubR2RenderedVideoUploader();
 
 const renderWorker = new Worker<RenderJobData>(
   renderQueueName,
   async (job) => {
-    console.info("Render worker received stub job", {
+    console.info("Render worker received job", {
       compositionId: job.data.compositionId,
       contentItemId: job.data.contentItemId,
       jobId: job.id,
     });
 
-    return {
-      renderStatus: "stubbed",
-    };
+    const result = await renderVideoJob(job.data, renderedVideoUploader);
+
+    console.info("Render worker finished job", {
+      contentItemId: result.contentItemId,
+      jobId: job.id,
+      localPath: result.localPath,
+      videoUrl: result.videoUrl,
+    });
+
+    return result;
   },
   { connection },
 );
