@@ -40,9 +40,10 @@ export default async function NewAvatarPage({
           <StudioNav active="new" workspaceId={workspace?.id} />
           <Button asChild className="w-fit" size="sm" variant="ghost">
             <Link
-              href={
-                workspace ? `/studio?workspaceId=${workspace.id}` : "/studio"
-              }
+              href={{
+                pathname: "/studio",
+                query: workspace ? { workspaceId: workspace.id } : undefined,
+              }}
             >
               <ArrowLeft aria-hidden="true" />
               Back to avatars

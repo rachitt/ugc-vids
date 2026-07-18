@@ -29,7 +29,7 @@ async function main() {
       workspaceId: workspace.id,
       url: scrape.rootUrl,
       scrapedSummary: scrape.pages[0]?.text.slice(0, 2000) ?? null,
-      productDesc: analysis.productDesc,
+      productDesc: analysis.productDescription,
       audience: analysis.audience,
       tone: analysis.tone,
       nicheTags: analysis.nicheTags,

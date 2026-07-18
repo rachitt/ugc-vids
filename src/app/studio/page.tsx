@@ -125,11 +125,10 @@ export default async function StudioPage({ searchParams }: StudioPageProps) {
             </div>
             <Button asChild>
               <Link
-                href={
-                  workspace
-                    ? `/studio/new?workspaceId=${workspace.id}`
-                    : "/studio/new"
-                }
+                href={{
+                  pathname: "/studio/new",
+                  query: workspace ? { workspaceId: workspace.id } : undefined,
+                }}
               >
                 <Sparkles aria-hidden="true" />
                 New avatar
