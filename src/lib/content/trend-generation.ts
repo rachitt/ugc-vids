@@ -1,14 +1,20 @@
-import { asc } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { contentItems, workspaces } from "@/lib/db/schema";
+import { brandProfiles, contentItems, workspaces } from "@/lib/db/schema";
 import type { PromptRecipe } from "@/lib/trends/metadata";
 import { createFallbackPromptRecipe } from "@/lib/trends/metadata";
 import type { TrendTemplateView } from "@/lib/trends/queries";
 import {
+  type RenderableContentFormat,
+} from "@/lib/content/formats";
+import {
+  generateContentItems,
+  type BrandProfileRow,
+} from "@/lib/content/generation";
+import {
   formatForCompositionId,
   validateRemotionProps,
-  type ContentFormat,
   type RemotionProps,
 } from "@/lib/video/remotion-props";
 import { remotionFixtures } from "@/remotion/fixtures";
@@ -24,7 +30,7 @@ export type GenerationRequest = {
 
 export type GenerationResult = {
   contentItemId: string;
-  format: ContentFormat;
+  format: RenderableContentFormat;
   remotionProps: RemotionProps;
 };
 
@@ -36,7 +42,9 @@ function cloneRemotionProps(props: RemotionProps): RemotionProps {
   return JSON.parse(JSON.stringify(props)) as RemotionProps;
 }
 
-function firstFixturePropsForFormat(format: ContentFormat): RemotionProps {
+function firstFixturePropsForFormat(
+  format: RenderableContentFormat,
+): RemotionProps {
   const fixture = remotionFixtures.find(
     (candidate) => candidate.format === format,
   );
@@ -81,7 +89,7 @@ function visualPlanForRecipe(promptRecipe: PromptRecipe): string[] {
 
 function buildRemotionPropsForRequest(
   request: GenerationRequest,
-  format: ContentFormat,
+  format: RenderableContentFormat,
 ): RemotionProps {
   const props = firstFixturePropsForFormat(format);
   const promptRecipe = recipeForRequest(request);
@@ -169,6 +177,54 @@ function buildScript(promptRecipe: PromptRecipe, remotionProps: RemotionProps) {
   };
 }
 
+async function getBrandProfileForRequest(
+  request: GenerationRequest,
+): Promise<BrandProfileRow | null> {
+  const conditions = [eq(brandProfiles.workspaceId, request.workspaceId)];
+
+  if (request.brandProfileId) {
+    conditions.push(eq(brandProfiles.id, request.brandProfileId));
+  }
+
+  const [brandProfile] = await db
+    .select()
+    .from(brandProfiles)
+    .where(and(...conditions))
+    .orderBy(desc(brandProfiles.updatedAt), desc(brandProfiles.createdAt))
+    .limit(1);
+
+  return brandProfile ?? null;
+}
+
+async function generateBrandedTrendRemix(
+  request: GenerationRequest,
+  brandProfile: BrandProfileRow,
+  format: RenderableContentFormat,
+  promptRecipe: PromptRecipe,
+): Promise<GenerationResult> {
+  const result = await generateContentItems({
+    brandProfile,
+    count: 1,
+    format,
+    promptRecipe,
+    trendTemplateId: request.trendTemplate.id,
+  });
+  const item = result.items[0];
+
+  if (!item) {
+    throw new Error(
+      result.errors[0]?.message ??
+        "Trend remix generation did not create a content item.",
+    );
+  }
+
+  return {
+    contentItemId: item.id,
+    format,
+    remotionProps: validateRemotionProps(item.remotionProps),
+  };
+}
+
 export class StubGenerationRequester implements GenerationRequester {
   async requestGeneration(
     request: GenerationRequest,
@@ -184,11 +240,22 @@ export class StubGenerationRequester implements GenerationRequester {
     }
 
     const promptRecipe = recipeForRequest(request);
+    const brandProfile = await getBrandProfileForRequest(request);
+
+    if (brandProfile) {
+      return generateBrandedTrendRemix(
+        request,
+        brandProfile,
+        format,
+        promptRecipe,
+      );
+    }
+
     const remotionProps = buildRemotionPropsForRequest(request, format);
     const [contentItem] = await db
       .insert(contentItems)
       .values({
-        brandProfileId: request.brandProfileId ?? null,
+        brandProfileId: null,
         format,
         remotionProps,
         script: buildScript(promptRecipe, remotionProps),

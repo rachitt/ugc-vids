@@ -19,13 +19,14 @@ import { Button } from "@/components/ui/button";
 import {
   contentFormatLabels,
   DEFAULT_MIXED_BATCH_SIZE,
+  isRenderableContentFormat,
+  type RenderableContentFormat,
 } from "@/lib/content/formats";
 import { db } from "@/lib/db";
 import { brandProfiles, contentItems } from "@/lib/db/schema";
 import { getOrCreateDefaultWorkspace } from "@/lib/workspaces";
 import {
   validateRemotionProps,
-  type ContentFormat,
   type RemotionProps,
 } from "@/lib/video/remotion-props";
 
@@ -46,7 +47,7 @@ type ContentPageProps = {
 type ContentListItem = {
   brandProfileId: string | null;
   createdAt: Date;
-  format: ContentFormat;
+  format: RenderableContentFormat;
   id: string;
   preview: string;
   renderStatus: string;
@@ -302,13 +303,15 @@ async function getContentItems(workspaceId: string): Promise<ContentListItem[]> 
     .limit(24);
 
   return rows
-    .filter((row) => row.status !== "rejected" && isRenderableFormat(row.format))
+    .filter(
+      (row) => row.status !== "rejected" && isRenderableContentFormat(row.format),
+    )
     .map((row) => {
       const remotionProps = safeValidateRemotionProps(row.remotionProps);
 
       return {
         ...row,
-        format: row.format as ContentFormat,
+        format: row.format as RenderableContentFormat,
         preview: buildScriptPreview(row.script),
         remotionProps,
       };
@@ -331,10 +334,6 @@ function safeValidateRemotionProps(value: unknown) {
   } catch {
     return null;
   }
-}
-
-function isRenderableFormat(format: string): format is ContentFormat {
-  return Object.prototype.hasOwnProperty.call(contentFormatLabels, format);
 }
 
 function buildStatusMessage(params: Awaited<ContentPageProps["searchParams"]>) {

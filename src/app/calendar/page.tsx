@@ -6,6 +6,7 @@ import type {
   CalendarSlot,
   CalendarWorkspace,
 } from "@/app/calendar/types";
+import { getContentFormatLabel } from "@/lib/content/formats";
 import { db } from "@/lib/db";
 import { calendarSlots, contentItems, workspaces } from "@/lib/db/schema";
 
@@ -122,17 +123,10 @@ function serializeContentItem(
     renderStatus: item.renderStatus,
     videoUrl: item.videoUrl,
     thumbUrl: item.thumbUrl,
-    hook: script.hook ?? formatLabel(item.format),
+    hook: script.hook ?? getContentFormatLabel(item.format),
     caption: script.caption ?? "",
     hashtags: script.hashtags ?? [],
     preview: previewParts.slice(0, 3).join(" / "),
     createdAt: item.createdAt.toISOString(),
   };
-}
-
-function formatLabel(format: CalendarContentItem["format"]) {
-  return format
-    .split("_")
-    .map((part) => part[0]?.toUpperCase() + part.slice(1))
-    .join(" ");
 }

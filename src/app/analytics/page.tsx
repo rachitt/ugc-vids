@@ -1,5 +1,6 @@
 import { asc, desc, eq, inArray } from "drizzle-orm";
 import { Plus, Upload } from "lucide-react";
+import type { Route } from "next";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -17,6 +18,7 @@ import {
 } from "@/lib/analytics/csv";
 import { buildTaggedContentLink } from "@/lib/analytics/utm";
 import { isUuid } from "@/lib/analytics/workspace-key";
+import type { ContentFormat } from "@/lib/content/formats";
 import { db } from "@/lib/db";
 import { contentItems, postMetrics, siteEvents, workspaces } from "@/lib/db/schema";
 
@@ -38,7 +40,7 @@ type ContentScript = {
 
 type ContentRow = {
   id: string;
-  format: string;
+  format: ContentFormat;
   status: string;
   script: ContentScript;
 };
@@ -253,7 +255,7 @@ async function saveManualMetric(formData: FormData) {
   });
 
   revalidatePath("/analytics");
-  redirect("/analytics?notice=manual-saved");
+  redirect("/analytics?notice=manual-saved" as Route);
 }
 
 async function importCsvMetrics(formData: FormData) {
@@ -299,7 +301,9 @@ async function importCsvMetrics(formData: FormData) {
   );
 
   revalidatePath("/analytics");
-  redirect(`/analytics?notice=csv-imported&imported=${rows.length}`);
+  redirect(
+    `/analytics?notice=csv-imported&imported=${rows.length}` as Route,
+  );
 }
 
 async function loadAnalyticsData() {
@@ -657,5 +661,7 @@ async function findMissingContentItemIds(contentItemIds: string[]) {
 }
 
 function redirectWithError(message: string): never {
-  redirect(`/analytics?error=${encodeURIComponent(message.slice(0, 240))}`);
+  redirect(
+    `/analytics?error=${encodeURIComponent(message.slice(0, 240))}` as Route,
+  );
 }

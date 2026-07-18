@@ -1,5 +1,6 @@
 "use server";
 
+import type { Route } from "next";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -13,19 +14,19 @@ export async function remixTrendAction(formData: FormData) {
   const trendId = String(formData.get("trendId") ?? "");
 
   if (!trendId) {
-    redirect("/trending?remix=missing-trend");
+    redirect("/trending?remix=missing-trend" as Route);
   }
 
   const trendTemplate = await getTrendTemplateById(trendId);
 
   if (!trendTemplate) {
-    redirect("/trending?remix=missing-trend");
+    redirect("/trending?remix=missing-trend" as Route);
   }
 
   const workspaceId = await getDefaultGenerationWorkspaceId();
 
   if (!workspaceId) {
-    redirect("/trending?remix=missing-workspace");
+    redirect("/trending?remix=missing-workspace" as Route);
   }
 
   await stubGenerationRequester.requestGeneration({
@@ -35,5 +36,5 @@ export async function remixTrendAction(formData: FormData) {
   });
 
   revalidatePath("/trending");
-  redirect("/trending?remix=created");
+  redirect("/trending?remix=created" as Route);
 }

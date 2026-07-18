@@ -6,7 +6,10 @@ import type { ComponentType } from "react";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import type { ContentFormat } from "@/lib/video/remotion-props";
+import {
+  contentFormatLabels,
+  type RenderableContentFormat,
+} from "@/lib/content/formats";
 import {
   REMOTION_FPS,
   REMOTION_VIDEO_HEIGHT,
@@ -26,14 +29,7 @@ const Player = dynamic(
   },
 );
 
-const formatLabels: Record<ContentFormat, string> = {
-  greenscreen_meme: "Greenscreen meme",
-  hook_demo: "Hook demo",
-  slideshow: "Slideshow",
-  wall_of_text: "Wall of text",
-};
-
-function firstFixtureForFormat(format: ContentFormat): RemotionFixture {
+function firstFixtureForFormat(format: RenderableContentFormat): RemotionFixture {
   const fixture = fixturesForFormat(format)[0];
 
   if (!fixture) {
@@ -44,7 +40,7 @@ function firstFixtureForFormat(format: ContentFormat): RemotionFixture {
 }
 
 export default function RemotionPreviewPage() {
-  const [format, setFormat] = useState<ContentFormat>("slideshow");
+  const [format, setFormat] = useState<RenderableContentFormat>("slideshow");
   const [fixtureId, setFixtureId] = useState(
     () => firstFixtureForFormat("slideshow").id,
   );
@@ -54,7 +50,7 @@ export default function RemotionPreviewPage() {
     fixtures.find((candidate) => candidate.id === fixtureId) ?? fixtures[0];
   const composition = getCompositionByFormat(format);
 
-  function selectFormat(nextFormat: ContentFormat) {
+  function selectFormat(nextFormat: RenderableContentFormat) {
     setFormat(nextFormat);
     setFixtureId(firstFixtureForFormat(nextFormat).id);
   }
@@ -83,12 +79,14 @@ export default function RemotionPreviewPage() {
             <select
               className="h-11 w-full rounded-md border border-white/10 bg-slate-900 px-3 text-sm text-slate-50 outline-none ring-emerald-300 focus:ring-2"
               id="format"
-              onChange={(event) => selectFormat(event.target.value as ContentFormat)}
+              onChange={(event) =>
+                selectFormat(event.target.value as RenderableContentFormat)
+              }
               value={format}
             >
               {remotionCompositions.map((definition) => (
                 <option key={definition.format} value={definition.format}>
-                  {formatLabels[definition.format]}
+                  {contentFormatLabels[definition.format]}
                 </option>
               ))}
             </select>

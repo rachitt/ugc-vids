@@ -1,7 +1,9 @@
 import type { contentItems, workspaces } from "@/lib/db/schema";
+import type { ContentFormat } from "./formats";
+
+export type { ContentFormat } from "./formats";
 
 export type WorkspacePlan = typeof workspaces.$inferSelect.plan;
-export type ContentFormat = typeof contentItems.$inferSelect.format;
 export type ContentStatus = typeof contentItems.$inferSelect.status;
 export type ContentScriptBase = typeof contentItems.$inferSelect.script;
 

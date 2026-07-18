@@ -1,6 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
+import type { Route } from "next";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -100,7 +101,7 @@ export async function createTrendTemplateAction(formData: FormData) {
 
   revalidatePath("/trending");
   revalidatePath("/trending/admin");
-  redirect("/trending/admin");
+  redirect("/trending/admin" as Route);
 }
 
 export async function updateTrendTemplateAction(formData: FormData) {
@@ -116,5 +117,5 @@ export async function updateTrendTemplateAction(formData: FormData) {
 
   revalidatePath("/trending");
   revalidatePath("/trending/admin");
-  redirect("/trending/admin");
+  redirect("/trending/admin" as Route);
 }

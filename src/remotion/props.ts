@@ -1,12 +1,12 @@
+import type { RenderableContentFormat } from "../lib/content/formats";
 import {
-  type ContentFormat,
   type RemotionProps,
   RemotionPropsSchema,
 } from "../lib/video/remotion-props";
 
 export function parseCompositionProps(
   input: RemotionProps,
-  expectedFormat: ContentFormat,
+  expectedFormat: RenderableContentFormat,
 ): RemotionProps {
   const props = RemotionPropsSchema.parse(input);
 

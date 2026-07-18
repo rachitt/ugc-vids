@@ -1,3 +1,4 @@
+import type { ContentFormat } from "@/lib/content/formats";
 import type { PublishingPlatform } from "@/lib/publishing/platforms";
 
 export type CalendarView = "week" | "month";
@@ -9,12 +10,7 @@ export type CalendarSlotStatus = "planned" | "exported" | "posted_manual";
 
 export type CalendarContentItem = {
   id: string;
-  format:
-    | "slideshow"
-    | "wall_of_text"
-    | "greenscreen_meme"
-    | "hook_demo"
-    | "avatar_ugc";
+  format: ContentFormat;
   status: CalendarItemStatus;
   renderStatus: "idle" | "queued" | "rendering" | "rendered" | "failed";
   videoUrl: string | null;

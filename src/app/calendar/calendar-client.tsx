@@ -28,6 +28,7 @@ import type {
 } from "@/app/calendar/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { contentFormatLabels } from "@/lib/content/formats";
 import { cn } from "@/lib/utils";
 import {
   getPlatformOption,
@@ -60,14 +61,6 @@ const platformHours: Record<PublishingPlatform, number> = {
   tiktok: 10,
   instagram: 14,
   youtube: 18,
-};
-
-const formatLabels: Record<CalendarContentItem["format"], string> = {
-  slideshow: "Slideshow",
-  wall_of_text: "Wall text",
-  greenscreen_meme: "Green screen",
-  hook_demo: "Hook demo",
-  avatar_ugc: "Avatar UGC",
 };
 
 const slotStatusLabels: Record<CalendarSlot["status"], string> = {
@@ -281,7 +274,7 @@ export function CalendarClient({
                           {item.hook}
                         </p>
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                          {formatLabels[item.format]}
+                          {contentFormatLabels[item.format]}
                         </p>
                       </div>
                     </div>

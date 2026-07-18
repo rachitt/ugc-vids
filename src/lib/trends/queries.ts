@@ -3,26 +3,34 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { trendTemplates } from "@/lib/db/schema";
 import {
+  getContentFormatLabel,
+  type RenderableContentFormat,
+} from "@/lib/content/formats";
+import {
   compositionIdForFormat,
   compositionIds,
   formatForCompositionId,
-  type ContentFormat,
   type RemotionCompositionId,
 } from "@/lib/video/remotion-props";
 
 import { parseTrendTemplateMetadata } from "./metadata";
 
-export const remotionTemplateLabels: Record<RemotionCompositionId, string> = {
-  "greenscreen-meme": "Greenscreen meme",
-  "hook-demo": "Hook demo",
-  slideshow: "Slideshow",
-  "wall-of-text": "Wall of text",
-};
+export const remotionTemplateLabels = Object.fromEntries(
+  compositionIds.map((id) => {
+    const format = formatForCompositionId(id);
+
+    if (!format) {
+      throw new Error(`Unknown Remotion composition id "${id}".`);
+    }
+
+    return [id, getContentFormatLabel(format)];
+  }),
+) as Record<RemotionCompositionId, string>;
 
 export type TrendTemplateRecord = typeof trendTemplates.$inferSelect;
 
 export type TrendTemplateView = TrendTemplateRecord & {
-  contentFormat: ContentFormat | null;
+  contentFormat: RenderableContentFormat | null;
   metadata: ReturnType<typeof parseTrendTemplateMetadata>;
   remotionTemplateLabel: string;
 };

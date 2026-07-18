@@ -46,6 +46,13 @@ export async function requestMoreBlitzItems(): Promise<ContentActionResult> {
 
   revalidatePath("/blitz");
 
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
   return {
     ok: true,
     message: result.message,

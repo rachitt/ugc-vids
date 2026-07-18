@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { CalculateMetadataFunction } from "remotion";
 
+import type { RenderableContentFormat } from "../lib/content/formats";
 import {
   compositionIdForFormat,
   DEFAULT_REMOTION_DURATION_IN_FRAMES,
@@ -8,7 +9,6 @@ import {
   REMOTION_FPS,
   REMOTION_VIDEO_HEIGHT,
   REMOTION_VIDEO_WIDTH,
-  type ContentFormat,
   type RemotionCompositionId,
   type RemotionProps,
   validateRemotionProps,
@@ -21,7 +21,7 @@ import { WallOfText } from "./WallOfText";
 
 const defaultPropsByFormat = Object.fromEntries(
   remotionFixtures.map((fixture) => [fixture.format, fixture.props]),
-) as Record<ContentFormat, RemotionProps>;
+) as Record<RenderableContentFormat, RemotionProps>;
 
 const calculateMetadata: CalculateMetadataFunction<RemotionProps> = ({
   props,
@@ -39,7 +39,7 @@ const calculateMetadata: CalculateMetadataFunction<RemotionProps> = ({
 
 export type RemotionCompositionDefinition = {
   id: RemotionCompositionId;
-  format: ContentFormat;
+  format: RenderableContentFormat;
   label: string;
   component: ComponentType<RemotionProps>;
   defaultProps: RemotionProps;
@@ -48,7 +48,7 @@ export type RemotionCompositionDefinition = {
 };
 
 function defineComposition(
-  format: ContentFormat,
+  format: RenderableContentFormat,
   label: string,
   component: ComponentType<RemotionProps>,
 ): RemotionCompositionDefinition {
@@ -74,7 +74,7 @@ export const remotionCompositions: RemotionCompositionDefinition[] = [
 ];
 
 export function getCompositionByFormat(
-  format: ContentFormat,
+  format: RenderableContentFormat,
 ): RemotionCompositionDefinition {
   const definition = remotionCompositions.find(
     (composition) => composition.format === format,

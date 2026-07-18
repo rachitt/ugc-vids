@@ -57,7 +57,7 @@ export default async function BlitzPage() {
             </p>
           </div>
           <Button asChild variant="outline">
-            <Link href="/library">
+            <Link href={{ pathname: "/library" }}>
               <Library className="size-4" aria-hidden="true" />
               Library
             </Link>

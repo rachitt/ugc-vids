@@ -5,10 +5,15 @@ import {
   Users,
 } from "lucide-react";
 
+import {
+  getContentFormatLabel,
+  type ContentFormat,
+} from "@/lib/content/formats";
+
 export type TopContentMetric = {
   id: string;
   title: string;
-  format: string;
+  format: ContentFormat;
   status: string;
   views: number;
   likes: number;
@@ -94,7 +99,7 @@ export function AnalyticsDashboard({
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{item.title}</p>
                     <p className="text-xs uppercase text-muted-foreground">
-                      {formatLabel(item.format)} · {item.status}
+                      {getContentFormatLabel(item.format)} · {item.status}
                     </p>
                   </div>
                   <p className="text-sm font-semibold">
@@ -255,8 +260,4 @@ function formatRate(signups: number, visitors: number) {
   }
 
   return `${Math.round((signups / visitors) * 100)}%`;
-}
-
-function formatLabel(value: string) {
-  return value.replaceAll("_", " ");
 }

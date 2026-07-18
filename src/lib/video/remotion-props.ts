@@ -1,16 +1,13 @@
 import { z } from "../../../node_modules/.pnpm/zod@4.4.3/node_modules/zod/index.js";
+import {
+  renderableContentFormats,
+  type RenderableContentFormat,
+} from "../content/formats";
 
 export const REMOTION_VIDEO_WIDTH = 1080;
 export const REMOTION_VIDEO_HEIGHT = 1920;
 export const REMOTION_FPS = 30;
 export const DEFAULT_REMOTION_DURATION_IN_FRAMES = 360;
-
-export const contentFormats = [
-  "slideshow",
-  "wall_of_text",
-  "greenscreen_meme",
-  "hook_demo",
-] as const;
 
 export const compositionIds = [
   "slideshow",
@@ -19,7 +16,6 @@ export const compositionIds = [
   "hook-demo",
 ] as const;
 
-export type ContentFormat = (typeof contentFormats)[number];
 export type RemotionCompositionId = (typeof compositionIds)[number];
 
 const AssetSchema = z.object({
@@ -94,7 +90,7 @@ const HookDemoSchema = z.object({
 
 export const RemotionPropsSchema = z
   .object({
-    format: z.enum(contentFormats),
+    format: z.enum(renderableContentFormats),
     durationInFrames: z
       .number()
       .int()
@@ -119,7 +115,7 @@ export const RemotionPropsSchema = z
     hookDemo: HookDemoSchema.optional(),
   })
   .superRefine((props, context) => {
-    const requiredByFormat: Record<ContentFormat, keyof typeof props> = {
+    const requiredByFormat: Record<RenderableContentFormat, keyof typeof props> = {
       greenscreen_meme: "greenscreenMeme",
       hook_demo: "hookDemo",
       slideshow: "slideshow",
@@ -149,7 +145,7 @@ export function getRemotionDurationInFrames(input: RemotionProps): number {
 }
 
 export function compositionIdForFormat(
-  format: ContentFormat,
+  format: RenderableContentFormat,
 ): RemotionCompositionId {
   switch (format) {
     case "slideshow":
@@ -165,7 +161,7 @@ export function compositionIdForFormat(
 
 export function formatForCompositionId(
   compositionId: string,
-): ContentFormat | null {
+): RenderableContentFormat | null {
   switch (compositionId) {
     case "slideshow":
       return "slideshow";
@@ -185,7 +181,7 @@ export function formatForCompositionId(
 
 export function normalizeCompositionId(
   compositionId: string | undefined,
-  format: ContentFormat,
+  format: RenderableContentFormat,
 ): RemotionCompositionId {
   if (!compositionId) {
     return compositionIdForFormat(format);
