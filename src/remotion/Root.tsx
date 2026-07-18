@@ -1,20 +1,30 @@
 import { Composition } from "remotion";
 
-import { PlaceholderVideo } from "./PlaceholderVideo";
+import {
+  REMOTION_FPS,
+  REMOTION_VIDEO_HEIGHT,
+  REMOTION_VIDEO_WIDTH,
+  RemotionPropsSchema,
+} from "../lib/video/remotion-props";
+import { remotionCompositions } from "./registry";
 
 export function RemotionRoot() {
   return (
-    <Composition
-      component={PlaceholderVideo}
-      defaultProps={{
-        subtitle: "Phase 0",
-        title: "Fastlane",
-      }}
-      durationInFrames={90}
-      fps={30}
-      height={1920}
-      id="PlaceholderVideo"
-      width={1080}
-    />
+    <>
+      {remotionCompositions.map((composition) => (
+        <Composition
+          calculateMetadata={composition.calculateMetadata}
+          component={composition.component}
+          defaultProps={composition.defaultProps}
+          durationInFrames={composition.durationInFrames}
+          fps={REMOTION_FPS}
+          height={REMOTION_VIDEO_HEIGHT}
+          id={composition.id}
+          key={composition.id}
+          schema={RemotionPropsSchema}
+          width={REMOTION_VIDEO_WIDTH}
+        />
+      ))}
+    </>
   );
 }

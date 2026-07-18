@@ -1,0 +1,51 @@
+{
+  "format": "slideshow",
+  "durationInFrames": 360,
+  "title": "3 reasons teams switch before launch week",
+  "caption": "Turn product proof into a short-form slideshow.",
+  "hashtags": ["#growth", "#ugc", "#saas"],
+  "brand": {
+    "name": "Northstar CRM",
+    "handle": "@northstarcrm"
+  },
+  "theme": {
+    "background": "#0f172a",
+    "foreground": "#f8fafc",
+    "accent": "#22c55e",
+    "secondary": "#38bdf8",
+    "muted": "#94a3b8"
+  },
+  "music": {
+    "src": "silent:placeholder",
+    "volume": 0.06
+  },
+  "slideshow": {
+    "kicker": "Launch week",
+    "slides": [
+      {
+        "image": {
+          "src": "placeholder:dashboard",
+          "label": "Unified pipeline"
+        },
+        "eyebrow": "Reason 1",
+        "caption": "Every lead source lands in one clean pipeline."
+      },
+      {
+        "image": {
+          "src": "placeholder:analytics",
+          "label": "Attribution view"
+        },
+        "eyebrow": "Reason 2",
+        "caption": "Marketing sees exactly which videos create demos."
+      },
+      {
+        "image": {
+          "src": "placeholder:workflow",
+          "label": "Launch checklist"
+        },
+        "eyebrow": "Reason 3",
+        "caption": "Operators can ship new offers without waiting on design."
+      }
+    ]
+  }
+}
