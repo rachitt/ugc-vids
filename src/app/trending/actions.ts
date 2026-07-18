@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import {
   getDefaultGenerationWorkspaceId,
   stubGenerationRequester,
-} from "@/lib/content/generation-contract";
+} from "@/lib/content/trend-generation";
 import { getTrendTemplateById } from "@/lib/trends/queries";
 
 export async function remixTrendAction(formData: FormData) {

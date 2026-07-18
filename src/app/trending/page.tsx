@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Filter, Settings, WandSparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { getDefaultGenerationWorkspaceId } from "@/lib/content/generation-contract";
+import { getDefaultGenerationWorkspaceId } from "@/lib/content/trend-generation";
 import {
   getTrendTemplateFilterOptions,
   isRemotionCompositionId,

@@ -9,6 +9,11 @@ import {
   type RenderJobData,
   type ScrapeJobData,
 } from "../src/lib/jobs/queues";
+import {
+  markContentItemRenderCompleted,
+  markContentItemRenderFailed,
+  markContentItemRenderStarted,
+} from "../src/lib/jobs/render-status";
 import { renderVideoJob } from "./render";
 import { StubR2RenderedVideoUploader } from "./r2-upload";
 
@@ -24,16 +29,28 @@ const renderWorker = new Worker<RenderJobData>(
       jobId: job.id,
     });
 
-    const result = await renderVideoJob(job.data, renderedVideoUploader);
+    await markContentItemRenderStarted(job.data.contentItemId);
 
-    console.info("Render worker finished job", {
-      contentItemId: result.contentItemId,
-      jobId: job.id,
-      localPath: result.localPath,
-      videoUrl: result.videoUrl,
-    });
+    try {
+      const result = await renderVideoJob(job.data, renderedVideoUploader);
 
-    return result;
+      await markContentItemRenderCompleted({
+        contentItemId: result.contentItemId,
+        videoUrl: result.videoUrl,
+      });
+
+      console.info("Render worker finished job", {
+        contentItemId: result.contentItemId,
+        jobId: job.id,
+        localPath: result.localPath,
+        videoUrl: result.videoUrl,
+      });
+
+      return result;
+    } catch (error) {
+      await markContentItemRenderFailed(job.data.contentItemId);
+      throw error;
+    }
   },
   { connection },
 );
