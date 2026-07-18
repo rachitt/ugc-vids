@@ -1,14 +1,13 @@
 import { and, count, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { contentItems, subscriptions, workspaces } from "@/lib/db/schema";
+import { contentItems, subscriptions } from "@/lib/db/schema";
 
 import type {
   ContentItemSummary,
   ContentScript,
   SaveLimit,
   WorkspacePlan,
-  WorkspaceSummary,
 } from "./types";
 
 const DEFAULT_DECK_LIMIT = 30;
@@ -38,20 +37,6 @@ export function getPlanSaveCap(plan: WorkspacePlan) {
   }
 
   return 20;
-}
-
-export async function getActiveWorkspace(): Promise<WorkspaceSummary | null> {
-  const [workspace] = await db
-    .select({
-      id: workspaces.id,
-      name: workspaces.name,
-      plan: workspaces.plan,
-    })
-    .from(workspaces)
-    .orderBy(desc(workspaces.updatedAt), desc(workspaces.createdAt))
-    .limit(1);
-
-  return workspace ?? null;
 }
 
 export async function getWorkspacePlan(

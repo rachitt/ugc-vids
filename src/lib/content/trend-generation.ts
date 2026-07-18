@@ -1,13 +1,11 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { brandProfiles, contentItems, workspaces } from "@/lib/db/schema";
+import { brandProfiles, contentItems } from "@/lib/db/schema";
 import type { PromptRecipe } from "@/lib/trends/metadata";
 import { createFallbackPromptRecipe } from "@/lib/trends/metadata";
 import type { TrendTemplateView } from "@/lib/trends/queries";
-import {
-  type RenderableContentFormat,
-} from "@/lib/content/formats";
+import { type RenderableContentFormat } from "@/lib/content/formats";
 import {
   generateContentItems,
   type BrandProfileRow,
@@ -17,6 +15,7 @@ import {
   validateRemotionProps,
   type RemotionProps,
 } from "@/lib/video/remotion-props";
+import { getActiveWorkspaceContext } from "@/lib/workspaces";
 import { remotionFixtures } from "@/remotion/fixtures";
 
 export type GenerationRequest = {
@@ -229,29 +228,34 @@ export class StubGenerationRequester implements GenerationRequester {
   async requestGeneration(
     request: GenerationRequest,
   ): Promise<GenerationResult> {
+    const { workspace } = await getActiveWorkspaceContext();
+    const activeRequest = {
+      ...request,
+      workspaceId: workspace.id,
+    };
     const format = formatForCompositionId(
-      request.trendTemplate.remotionTemplateId,
+      activeRequest.trendTemplate.remotionTemplateId,
     );
 
     if (!format) {
       throw new Error(
-        `Cannot remix trend with unknown Remotion template "${request.trendTemplate.remotionTemplateId}".`,
+        `Cannot remix trend with unknown Remotion template "${activeRequest.trendTemplate.remotionTemplateId}".`,
       );
     }
 
-    const promptRecipe = recipeForRequest(request);
-    const brandProfile = await getBrandProfileForRequest(request);
+    const promptRecipe = recipeForRequest(activeRequest);
+    const brandProfile = await getBrandProfileForRequest(activeRequest);
 
     if (brandProfile) {
       return generateBrandedTrendRemix(
-        request,
+        activeRequest,
         brandProfile,
         format,
         promptRecipe,
       );
     }
 
-    const remotionProps = buildRemotionPropsForRequest(request, format);
+    const remotionProps = buildRemotionPropsForRequest(activeRequest, format);
     const [contentItem] = await db
       .insert(contentItems)
       .values({
@@ -260,8 +264,8 @@ export class StubGenerationRequester implements GenerationRequester {
         remotionProps,
         script: buildScript(promptRecipe, remotionProps),
         status: "generated",
-        trendTemplateId: request.trendTemplate.id,
-        workspaceId: request.workspaceId,
+        trendTemplateId: activeRequest.trendTemplate.id,
+        workspaceId: activeRequest.workspaceId,
       })
       .returning({
         id: contentItems.id,
@@ -281,15 +285,3 @@ export class StubGenerationRequester implements GenerationRequester {
 
 export const stubGenerationRequester: GenerationRequester =
   new StubGenerationRequester();
-
-export async function getDefaultGenerationWorkspaceId(): Promise<
-  string | null
-> {
-  const [workspace] = await db
-    .select({ id: workspaces.id })
-    .from(workspaces)
-    .orderBy(asc(workspaces.createdAt))
-    .limit(1);
-
-  return workspace?.id ?? null;
-}

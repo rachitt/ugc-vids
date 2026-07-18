@@ -2,12 +2,10 @@ import { desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { brandProfiles } from "@/lib/db/schema";
+import { getActiveWorkspaceContext } from "@/lib/workspaces";
 
 import { generateMixedContentBatch } from "./batch";
-import {
-  isRenderableContentFormat,
-  type ContentFormat,
-} from "./formats";
+import { isRenderableContentFormat, type ContentFormat } from "./formats";
 
 export type GenerationRequestReason =
   "deck_low" | "manual_request" | "preference_refresh";
@@ -57,13 +55,14 @@ function totalCountForRequest(request: GenerationRequest) {
 
 export const placeholderGenerationRequester: GenerationRequester = {
   async requestGeneration(request) {
-    const requestId = createRequestId(request.workspaceId);
+    const { workspace } = await getActiveWorkspaceContext();
+    const requestId = createRequestId(workspace.id);
     const [brandProfile] = await db
       .select({
         id: brandProfiles.id,
       })
       .from(brandProfiles)
-      .where(eq(brandProfiles.workspaceId, request.workspaceId))
+      .where(eq(brandProfiles.workspaceId, workspace.id))
       .orderBy(desc(brandProfiles.updatedAt), desc(brandProfiles.createdAt))
       .limit(1);
 
@@ -80,7 +79,7 @@ export const placeholderGenerationRequester: GenerationRequester = {
       const result = await generateMixedContentBatch({
         brandProfileId: brandProfile.id,
         totalCount: totalCountForRequest(request),
-        workspaceId: request.workspaceId,
+        workspaceId: workspace.id,
       });
 
       return {

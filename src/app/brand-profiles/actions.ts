@@ -9,7 +9,10 @@ import { analyzeBrandProfile } from "@/lib/brand/analysis";
 import { normalizeWebsiteUrl, scrapeBrandWebsite } from "@/lib/brand/scraper";
 import { db } from "@/lib/db";
 import { brandProfiles } from "@/lib/db/schema";
-import { getOrCreateDefaultWorkspace } from "@/lib/workspaces";
+import {
+  getOrCreateDefaultWorkspace,
+  setActiveWorkspaceAction,
+} from "@/lib/workspaces";
 
 export async function createBrandProfileAction(formData: FormData) {
   let profileId: string;
@@ -52,6 +55,12 @@ export async function createBrandProfileAction(formData: FormData) {
 
     if (!profile) {
       throw new Error("The brand profile could not be saved.");
+    }
+
+    const activeWorkspaceResult = await setActiveWorkspaceAction(workspace.id);
+
+    if (!activeWorkspaceResult.ok) {
+      throw new Error(activeWorkspaceResult.error);
     }
 
     profileId = profile.id;

@@ -4,11 +4,9 @@ import type { Route } from "next";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import {
-  getDefaultGenerationWorkspaceId,
-  stubGenerationRequester,
-} from "@/lib/content/trend-generation";
+import { stubGenerationRequester } from "@/lib/content/trend-generation";
 import { getTrendTemplateById } from "@/lib/trends/queries";
+import { getActiveWorkspaceContext } from "@/lib/workspaces";
 
 export async function remixTrendAction(formData: FormData) {
   const trendId = String(formData.get("trendId") ?? "");
@@ -23,16 +21,12 @@ export async function remixTrendAction(formData: FormData) {
     redirect("/trending?remix=missing-trend" as Route);
   }
 
-  const workspaceId = await getDefaultGenerationWorkspaceId();
-
-  if (!workspaceId) {
-    redirect("/trending?remix=missing-workspace" as Route);
-  }
+  const { workspace } = await getActiveWorkspaceContext();
 
   await stubGenerationRequester.requestGeneration({
     source: "trending_remix",
     trendTemplate,
-    workspaceId,
+    workspaceId: workspace.id,
   });
 
   revalidatePath("/trending");
