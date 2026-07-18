@@ -1,5 +1,7 @@
-import type { ContentFormat } from "@/lib/content/types";
-import { getContentFormatLabel } from "@/lib/content/display";
+import {
+  getContentFormatLabel,
+  type ContentFormat,
+} from "@/lib/content/formats";
 import { cn } from "@/lib/utils";
 
 type FormatBadgeProps = {

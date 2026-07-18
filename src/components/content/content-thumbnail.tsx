@@ -1,7 +1,9 @@
 import { Film } from "lucide-react";
 
-import type { ContentFormat } from "@/lib/content/types";
-import { getContentInitials } from "@/lib/content/display";
+import {
+  getContentInitials,
+  type ContentFormat,
+} from "@/lib/content/formats";
 import { cn } from "@/lib/utils";
 
 type ContentThumbnailProps = {

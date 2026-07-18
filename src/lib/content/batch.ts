@@ -2,11 +2,11 @@ import { and, eq } from "drizzle-orm";
 
 import { db } from "../db";
 import { brandProfiles } from "../db/schema";
-import type { ContentFormat } from "../video/remotion-props";
 import {
   buildMixedFormatPlan,
   clampBatchSize,
   DEFAULT_MIXED_BATCH_SIZE,
+  type RenderableContentFormat,
 } from "./formats";
 import {
   generateContentItems,
@@ -23,7 +23,7 @@ export type MixedContentBatchResult = {
   failedCount: number;
   generatedCount: number;
   items: GeneratedContentItem[];
-  plan: ContentFormat[];
+  plan: RenderableContentFormat[];
   requestedCount: number;
 };
 

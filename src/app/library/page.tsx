@@ -54,7 +54,7 @@ export default async function LibraryPage() {
             </p>
           </div>
           <Button asChild>
-            <Link href="/blitz">
+            <Link href={{ pathname: "/blitz" }}>
               <Sparkles className="size-4" aria-hidden="true" />
               Blitz
             </Link>

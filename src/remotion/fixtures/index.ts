@@ -1,5 +1,5 @@
+import type { RenderableContentFormat } from "../../lib/content/formats";
 import {
-  type ContentFormat,
   type RemotionProps,
   validateRemotionProps,
 } from "../../lib/video/remotion-props";
@@ -12,7 +12,7 @@ import wallOfTextFixture from "./wall-of-text.json";
 export type RemotionFixture = {
   id: string;
   label: string;
-  format: ContentFormat;
+  format: RenderableContentFormat;
   props: RemotionProps;
 };
 
@@ -43,6 +43,8 @@ export const remotionFixtures: RemotionFixture[] = [
   },
 ];
 
-export function fixturesForFormat(format: ContentFormat): RemotionFixture[] {
+export function fixturesForFormat(
+  format: RenderableContentFormat,
+): RemotionFixture[] {
   return remotionFixtures.filter((fixture) => fixture.format === format);
 }

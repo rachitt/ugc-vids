@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 
-import { isContentFormat } from "../content/formats";
+import { isRenderableContentFormat } from "../content/formats";
 import { db } from "../db";
 import { contentItems } from "../db/schema";
 import {
@@ -41,7 +41,7 @@ export async function enqueueContentItemRender({
     throw new Error("Content item not found.");
   }
 
-  if (!isContentFormat(item.format)) {
+  if (!isRenderableContentFormat(item.format)) {
     throw new Error(`Content format ${item.format} cannot be rendered yet.`);
   }
 

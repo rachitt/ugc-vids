@@ -1,13 +1,16 @@
 import { runClaudeAgentTask } from "../ai/agent";
 import { db } from "../db";
 import { brandProfiles, contentItems } from "../db/schema";
+import type { PromptRecipe } from "../trends/metadata";
 import {
-  type ContentFormat,
   type RemotionProps,
   type RemotionTheme,
   validateRemotionProps,
 } from "../video/remotion-props";
-import { contentFormatLabels } from "./formats";
+import {
+  contentFormatLabels,
+  type RenderableContentFormat,
+} from "./formats";
 
 export type BrandProfileRow = typeof brandProfiles.$inferSelect;
 export type ContentItemRow = typeof contentItems.$inferSelect;
@@ -31,7 +34,7 @@ export type GeneratedContentItem = Pick<
 >;
 
 export type ContentGenerationError = {
-  format: ContentFormat;
+  format: RenderableContentFormat;
   message: string;
   scriptIndex: number;
 };
@@ -45,7 +48,9 @@ export type GenerateContentItemsResult = {
 type GenerateContentItemsInput = {
   brandProfile: BrandProfileRow;
   count: number;
-  format: ContentFormat;
+  format: RenderableContentFormat;
+  promptRecipe?: PromptRecipe;
+  trendTemplateId?: string | null;
 };
 
 type ClaudeScript = {
@@ -85,7 +90,7 @@ const SYSTEM_PROMPT = [
   "Every item should use a distinct hook angle, pain point, or niche tag from the profile.",
 ].join("\n");
 
-const FORMAT_RECIPES: Record<ContentFormat, string[]> = {
+const FORMAT_RECIPES: Record<RenderableContentFormat, string[]> = {
   greenscreen_meme: [
     "Use a POV or reaction-meme setup.",
     "The hook should be short enough to sit as top meme text.",
@@ -127,12 +132,19 @@ export async function generateContentItems({
   brandProfile,
   count,
   format,
+  promptRecipe,
+  trendTemplateId,
 }: GenerateContentItemsInput): Promise<GenerateContentItemsResult> {
   const requestedCount = clampScriptCount(count);
   const output = await runClaudeAgentTask<unknown>({
     maxTurns: 1,
     outputSchema: buildContentScriptsSchema(format, requestedCount),
-    prompt: buildContentGenerationPrompt(brandProfile, format, requestedCount),
+    prompt: buildContentGenerationPrompt(
+      brandProfile,
+      format,
+      requestedCount,
+      promptRecipe,
+    ),
     systemPrompt: SYSTEM_PROMPT,
     title: `Content generation: ${contentFormatLabels[format]}`,
   });
@@ -159,6 +171,7 @@ export async function generateContentItems({
           remotionProps: remotionProps as unknown as Record<string, unknown>,
           script: scriptJson,
           status: "generated",
+          trendTemplateId: trendTemplateId ?? null,
           workspaceId: brandProfile.workspaceId,
         })
         .returning({
@@ -206,13 +219,17 @@ export async function generateContentItems({
 
 function buildContentGenerationPrompt(
   brandProfile: BrandProfileRow,
-  format: ContentFormat,
+  format: RenderableContentFormat,
   count: number,
+  promptRecipe?: PromptRecipe,
 ) {
+  const brand = buildRemotionBrand(brandProfile);
+
   return [
     `Generate exactly ${count} ${contentFormatLabels[format]} script(s).`,
     "",
     "Brand profile:",
+    `- Brand name: ${brand.name}`,
     `- Website: ${brandProfile.url}`,
     `- Product: ${brandProfile.productDesc ?? "Unknown product"}`,
     `- Audience: ${brandProfile.audience ?? "Unknown audience"}`,
@@ -223,6 +240,7 @@ function buildContentGenerationPrompt(
     "",
     "Prompt recipe:",
     FORMAT_RECIPES[format].map((line) => `- ${line}`).join("\n"),
+    promptRecipe ? formatTrendPromptRecipe(promptRecipe) : null,
     "",
     "Required output:",
     "- hook: primary on-screen hook",
@@ -241,13 +259,41 @@ function buildContentGenerationPrompt(
       ? "- subhook, demoSteps, and cta for the product walkthrough"
       : null,
     "",
-    "Use the profile's hook_angles, pain_points, tone, and niche_tags as source material. Make each script distinct.",
+    promptRecipe
+      ? "Use the trend prompt recipe as the structure, then adapt it with the profile's brand name, tone, hook_angles, pain_points, and niche_tags. Make each script distinct."
+      : "Use the profile's hook_angles, pain_points, tone, and niche_tags as source material. Make each script distinct.",
   ]
     .filter(Boolean)
     .join("\n");
 }
 
-function buildContentScriptsSchema(format: ContentFormat, count: number) {
+function formatTrendPromptRecipe(promptRecipe: PromptRecipe) {
+  return [
+    "",
+    "Trend prompt recipe:",
+    `- Hook: ${promptRecipe.hook}`,
+    `- Setup: ${promptRecipe.setup}`,
+    promptRecipe.beats.length
+      ? `- Beats:\n${formatList(promptRecipe.beats)}`
+      : null,
+    promptRecipe.visualPlan.length
+      ? `- Visual plan:\n${formatList(promptRecipe.visualPlan)}`
+      : null,
+    promptRecipe.proofCue ? `- Proof cue: ${promptRecipe.proofCue}` : null,
+    `- CTA: ${promptRecipe.cta}`,
+    `- Generation notes: ${promptRecipe.generationNotes}`,
+    promptRecipe.avoid.length
+      ? `- Avoid:\n${formatList(promptRecipe.avoid)}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function buildContentScriptsSchema(
+  format: RenderableContentFormat,
+  count: number,
+) {
   const commonProperties = {
     caption: {
       description: "A social caption without hashtags.",
@@ -270,7 +316,7 @@ function buildContentScriptsSchema(format: ContentFormat, count: number) {
     },
   } satisfies Record<string, unknown>;
 
-  const byFormat: Record<ContentFormat, Record<string, unknown>> = {
+  const byFormat: Record<RenderableContentFormat, Record<string, unknown>> = {
     greenscreen_meme: {
       additionalProperties: false,
       properties: {
@@ -399,7 +445,7 @@ function getClaudeScripts(output: unknown, count: number): ClaudeScript[] {
 
 function normalizeClaudeScript(
   rawScript: ClaudeScript,
-  format: ContentFormat,
+  format: RenderableContentFormat,
 ): NormalizedScript {
   const hook = getRequiredString(rawScript, "hook");
   const caption = getRequiredString(rawScript, "caption");
@@ -452,7 +498,7 @@ function normalizeClaudeScript(
 
 function mapScriptToRemotionProps(
   brandProfile: BrandProfileRow,
-  format: ContentFormat,
+  format: RenderableContentFormat,
   script: NormalizedScript,
   itemIndex: number,
 ): RemotionProps {
@@ -549,7 +595,7 @@ function mapScriptToRemotionProps(
 }
 
 function mapScriptToContentItemScript(
-  format: ContentFormat,
+  format: RenderableContentFormat,
   script: NormalizedScript,
 ): ContentItemScript {
   const base = {
