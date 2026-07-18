@@ -3,10 +3,10 @@ import { Library, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
-  getActiveWorkspace,
   getWorkspaceSaveLimit,
   listGeneratedContentItems,
 } from "@/lib/content/queries";
+import { getActiveWorkspaceContext } from "@/lib/workspaces";
 
 import { BlitzDeck } from "./blitz-deck";
 
@@ -15,26 +15,7 @@ const LOW_DECK_THRESHOLD = 3;
 export const dynamic = "force-dynamic";
 
 export default async function BlitzPage() {
-  const workspace = await getActiveWorkspace();
-
-  if (!workspace) {
-    return (
-      <main className="min-h-screen bg-background px-6 py-10 text-foreground">
-        <section className="mx-auto flex min-h-[70vh] max-w-3xl flex-col justify-center gap-4">
-          <p className="text-sm font-medium uppercase text-muted-foreground">
-            Blitz Mode
-          </p>
-          <h1 className="text-4xl font-semibold tracking-normal">
-            No workspace found
-          </h1>
-          <p className="text-base leading-7 text-muted-foreground">
-            Run the Blitz fixture seed to create a demo workspace and generated
-            content items.
-          </p>
-        </section>
-      </main>
-    );
-  }
+  const { workspace } = await getActiveWorkspaceContext();
 
   const [items, saveLimit] = await Promise.all([
     listGeneratedContentItems(workspace.id),

@@ -2,16 +2,14 @@ import Link from "next/link";
 import { Filter, Settings, WandSparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  getDefaultGenerationWorkspaceId,
-  TREND_REMIX_VARIANT_COUNT,
-} from "@/lib/content/trend-generation";
+import { TREND_REMIX_VARIANT_COUNT } from "@/lib/content/trend-generation";
 import {
   getTrendTemplateFilterOptions,
   isRemotionCompositionId,
   listTrendTemplates,
 } from "@/lib/trends/queries";
 import type { RemotionCompositionId } from "@/lib/video/remotion-props";
+import { getActiveWorkspaceContext } from "@/lib/workspaces";
 
 import { remixTrendAction } from "./actions";
 
@@ -110,14 +108,15 @@ export default async function TrendingPage({
   const niche = firstParam(params.niche)?.toLowerCase();
   const formatParam = firstParam(params.format);
   const format = isRemotionCompositionId(formatParam) ? formatParam : undefined;
-  const [trends, filterOptions, workspaceId] = await Promise.all([
+  const [trends, filterOptions, activeWorkspaceContext] = await Promise.all([
     listTrendTemplates({
       format,
       nicheTag: niche,
     }),
     getTrendTemplateFilterOptions(),
-    getDefaultGenerationWorkspaceId(),
+    getActiveWorkspaceContext(),
   ]);
+  const workspaceId = activeWorkspaceContext.workspace.id;
   const banner = remixBanner(firstParam(params.remix), firstParam(params.count));
 
   return (

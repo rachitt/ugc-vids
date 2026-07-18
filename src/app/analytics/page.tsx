@@ -1,4 +1,4 @@
-import { asc, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { Plus, Upload } from "lucide-react";
 import type { Route } from "next";
 import { revalidatePath } from "next/cache";
@@ -20,7 +20,8 @@ import { buildTaggedContentLink } from "@/lib/analytics/utm";
 import { isUuid } from "@/lib/analytics/workspace-key";
 import type { ContentFormat } from "@/lib/content/formats";
 import { db } from "@/lib/db";
-import { contentItems, postMetrics, siteEvents, workspaces } from "@/lib/db/schema";
+import { contentItems, postMetrics, siteEvents } from "@/lib/db/schema";
+import { getActiveWorkspaceContext } from "@/lib/workspaces";
 
 export const dynamic = "force-dynamic";
 
@@ -89,7 +90,9 @@ export default async function AnalyticsPage({
           </div>
 
           <div className="rounded-lg border bg-card p-4 text-sm text-card-foreground">
-            <p className="font-medium">{data.workspaceName ?? "No workspace"}</p>
+            <p className="font-medium">
+              {data.workspaceName ?? "No workspace"}
+            </p>
             <p className="mt-1 max-w-[320px] break-all font-mono text-xs text-muted-foreground">
               {data.workspacePublicKey ?? "Seed fixtures to create demo data"}
             </p>
@@ -236,7 +239,8 @@ async function saveManualMetric(formData: FormData) {
     redirectWithError("Choose a valid platform");
   }
 
-  const contentItemExists = await hasContentItem(contentItemId);
+  const { workspace } = await getActiveWorkspaceContext();
+  const contentItemExists = await hasContentItem(contentItemId, workspace.id);
 
   if (!contentItemExists) {
     redirectWithError("Content item was not found");
@@ -280,8 +284,10 @@ async function importCsvMetrics(formData: FormData) {
     redirectWithError("CSV contains an invalid content item id");
   }
 
+  const { workspace } = await getActiveWorkspaceContext();
   const missingIds = await findMissingContentItemIds(
     rows.map((row) => row.contentItemId),
+    workspace.id,
   );
 
   if (missingIds.length > 0) {
@@ -301,33 +307,11 @@ async function importCsvMetrics(formData: FormData) {
   );
 
   revalidatePath("/analytics");
-  redirect(
-    `/analytics?notice=csv-imported&imported=${rows.length}` as Route,
-  );
+  redirect(`/analytics?notice=csv-imported&imported=${rows.length}` as Route);
 }
 
 async function loadAnalyticsData() {
-  const [workspace] = await db
-    .select({
-      id: workspaces.id,
-      name: workspaces.name,
-    })
-    .from(workspaces)
-    .orderBy(asc(workspaces.createdAt))
-    .limit(1);
-
-  if (!workspace) {
-    return {
-      attribution: [],
-      contentOptions: [],
-      embedSnippet: "No workspace public key available",
-      funnel: emptyFunnel(),
-      sampleTaggedLink: null,
-      topContent: [],
-      workspaceName: null,
-      workspacePublicKey: null,
-    };
-  }
+  const { workspace } = await getActiveWorkspaceContext();
 
   const contentRows = await db
     .select({
@@ -452,7 +436,8 @@ function buildFunnel(contentRows: ContentRow[]): FunnelStep[] {
   return [
     {
       label: "Saved",
-      value: contentRows.filter((item) => savedStatuses.has(item.status)).length,
+      value: contentRows.filter((item) => savedStatuses.has(item.status))
+        .length,
     },
     {
       label: "Exported",
@@ -518,14 +503,6 @@ function buildAttribution(
     }))
     .sort((a, b) => b.signups - a.signups || b.visitors - a.visitors)
     .slice(0, 8);
-}
-
-function emptyFunnel(): FunnelStep[] {
-  return [
-    { label: "Saved", value: 0 },
-    { label: "Exported", value: 0 },
-    { label: "Posted", value: 0 },
-  ];
 }
 
 function isLaterMetric(candidate: MetricRow, current: MetricRow) {
@@ -639,22 +616,35 @@ function isUploadedFile(value: FormDataEntryValue | null): value is File {
   return typeof File !== "undefined" && value instanceof File;
 }
 
-async function hasContentItem(contentItemId: string) {
+async function hasContentItem(contentItemId: string, workspaceId: string) {
   const [contentItem] = await db
     .select({ id: contentItems.id })
     .from(contentItems)
-    .where(eq(contentItems.id, contentItemId))
+    .where(
+      and(
+        eq(contentItems.id, contentItemId),
+        eq(contentItems.workspaceId, workspaceId),
+      ),
+    )
     .limit(1);
 
   return Boolean(contentItem);
 }
 
-async function findMissingContentItemIds(contentItemIds: string[]) {
+async function findMissingContentItemIds(
+  contentItemIds: string[],
+  workspaceId: string,
+) {
   const uniqueIds = Array.from(new Set(contentItemIds));
   const existingRows = await db
     .select({ id: contentItems.id })
     .from(contentItems)
-    .where(inArray(contentItems.id, uniqueIds));
+    .where(
+      and(
+        inArray(contentItems.id, uniqueIds),
+        eq(contentItems.workspaceId, workspaceId),
+      ),
+    );
   const existingIds = new Set(existingRows.map((row) => row.id));
 
   return uniqueIds.filter((contentItemId) => !existingIds.has(contentItemId));

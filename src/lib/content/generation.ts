@@ -149,7 +149,7 @@ export async function generateContentItems({
 }: GenerateContentItemsInput): Promise<GenerateContentItemsResult> {
   const requestedCount = clampScriptCount(count);
   const output = await runClaudeAgentTask<unknown>({
-    maxTurns: 1,
+    maxTurns: 3,
     outputSchema: buildContentScriptsSchema(format, requestedCount),
     prompt: buildContentGenerationPrompt(
       brandProfile,

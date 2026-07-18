@@ -1,11 +1,46 @@
-import { and, eq } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 import { db } from "@/lib/db";
-import { workspaceMembers, workspaces } from "@/lib/db/schema";
+import {
+  brandProfiles,
+  contentItems,
+  workspaceMembers,
+  workspaces,
+} from "@/lib/db/schema";
 
 const DEFAULT_WORKSPACE_NAME = "Default Workspace";
-const uuidPattern =
+const ACTIVE_WORKSPACE_COOKIE = "fastlane_workspace_id";
+const ACTIVE_WORKSPACE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+const workspaceIdPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export type WorkspaceSummary = Pick<
+  typeof workspaces.$inferSelect,
+  "id" | "name" | "plan"
+>;
+
+export type WorkspaceSwitcherOption = WorkspaceSummary & {
+  brandProfileCount: number;
+  contentItemCount: number;
+};
+
+export type ActiveWorkspaceContext = {
+  workspace: WorkspaceSummary;
+  workspaces: WorkspaceSwitcherOption[];
+  source: "brand_profile" | "cookie" | "default";
+};
+
+export type SetActiveWorkspaceResult =
+  | {
+      ok: true;
+      workspaceId: string;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
 
 export function getDefaultWorkspaceName() {
   return (
@@ -18,38 +53,195 @@ export function hasDefaultWorkspaceNameOverride() {
   return Boolean(process.env.FASTLANE_DEFAULT_WORKSPACE_NAME?.trim());
 }
 
-export async function getOrCreateDefaultWorkspace() {
+export async function getOrCreateDefaultWorkspace(): Promise<WorkspaceSummary> {
   const workspaceName = getDefaultWorkspaceName();
-  const [existingWorkspace] = await db
-    .select({
-      id: workspaces.id,
-    })
-    .from(workspaces)
-    .where(eq(workspaces.name, workspaceName))
-    .limit(1);
 
-  if (existingWorkspace) {
-    return existingWorkspace;
+  return db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${workspaceName}))`,
+    );
+
+    const [existingWorkspace] = await tx
+      .select({
+        id: workspaces.id,
+        name: workspaces.name,
+        plan: workspaces.plan,
+      })
+      .from(workspaces)
+      .where(eq(workspaces.name, workspaceName))
+      .limit(1);
+
+    if (existingWorkspace) {
+      return existingWorkspace;
+    }
+
+    const [workspace] = await tx
+      .insert(workspaces)
+      .values({
+        name: workspaceName,
+      })
+      .returning({
+        id: workspaces.id,
+        name: workspaces.name,
+        plan: workspaces.plan,
+      });
+
+    if (!workspace) {
+      throw new Error("The default workspace could not be created.");
+    }
+
+    return workspace;
+  });
+}
+
+export async function getWorkspaceById(
+  workspaceId: string,
+): Promise<WorkspaceSummary | null> {
+  if (!isWorkspaceId(workspaceId)) {
+    return null;
   }
 
   const [workspace] = await db
-    .insert(workspaces)
-    .values({
-      name: workspaceName,
-    })
-    .returning({
+    .select({
       id: workspaces.id,
-    });
+      name: workspaces.name,
+      plan: workspaces.plan,
+    })
+    .from(workspaces)
+    .where(eq(workspaces.id, workspaceId))
+    .limit(1);
+
+  return workspace ?? null;
+}
+
+export async function getActiveWorkspaceContext(): Promise<ActiveWorkspaceContext> {
+  const cookieStore = await cookies();
+  const cookieWorkspaceId = cookieStore.get(ACTIVE_WORKSPACE_COOKIE)?.value;
+  const cookieWorkspace = cookieWorkspaceId
+    ? await getWorkspaceById(cookieWorkspaceId)
+    : null;
+
+  let source: ActiveWorkspaceContext["source"] = "cookie";
+  let workspace = cookieWorkspace;
 
   if (!workspace) {
-    throw new Error("The default workspace could not be created.");
+    workspace = await getMostRecentlyUpdatedBrandProfileWorkspace();
+    source = workspace ? "brand_profile" : "default";
   }
 
-  return workspace;
+  if (!workspace) {
+    workspace = await getOrCreateDefaultWorkspace();
+  }
+
+  const workspaceOptions = await listWorkspaceSwitcherOptions();
+
+  return {
+    workspace,
+    workspaces: workspaceOptions.some((option) => option.id === workspace.id)
+      ? workspaceOptions
+      : [toWorkspaceSwitcherOption(workspace), ...workspaceOptions],
+    source,
+  };
+}
+
+export async function setActiveWorkspaceAction(
+  workspaceId: string,
+): Promise<SetActiveWorkspaceResult> {
+  "use server";
+
+  const workspace = await getWorkspaceById(workspaceId.trim());
+
+  if (!workspace) {
+    return {
+      ok: false,
+      error: "Workspace not found.",
+    };
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set(ACTIVE_WORKSPACE_COOKIE, workspace.id, {
+    httpOnly: false,
+    maxAge: ACTIVE_WORKSPACE_COOKIE_MAX_AGE,
+    path: "/",
+    sameSite: "lax",
+  });
+  revalidateActiveWorkspacePaths();
+
+  return {
+    ok: true,
+    workspaceId: workspace.id,
+  };
+}
+
+async function getMostRecentlyUpdatedBrandProfileWorkspace(): Promise<WorkspaceSummary | null> {
+  const [workspace] = await db
+    .select({
+      id: workspaces.id,
+      name: workspaces.name,
+      plan: workspaces.plan,
+    })
+    .from(brandProfiles)
+    .innerJoin(workspaces, eq(brandProfiles.workspaceId, workspaces.id))
+    .orderBy(desc(brandProfiles.updatedAt), desc(brandProfiles.createdAt))
+    .limit(1);
+
+  return workspace ?? null;
+}
+
+async function listWorkspaceSwitcherOptions(): Promise<
+  WorkspaceSwitcherOption[]
+> {
+  const [workspaceRows, brandProfileCountRows, contentItemCountRows] =
+    await Promise.all([
+      db
+        .select({
+          id: workspaces.id,
+          name: workspaces.name,
+          plan: workspaces.plan,
+        })
+        .from(workspaces)
+        .orderBy(desc(workspaces.updatedAt), desc(workspaces.createdAt)),
+      db
+        .select({
+          count: count(),
+          workspaceId: brandProfiles.workspaceId,
+        })
+        .from(brandProfiles)
+        .groupBy(brandProfiles.workspaceId),
+      db
+        .select({
+          count: count(),
+          workspaceId: contentItems.workspaceId,
+        })
+        .from(contentItems)
+        .groupBy(contentItems.workspaceId),
+    ]);
+  const brandProfileCounts = new Map(
+    brandProfileCountRows.map((row) => [row.workspaceId, row.count]),
+  );
+  const contentItemCounts = new Map(
+    contentItemCountRows.map((row) => [row.workspaceId, row.count]),
+  );
+
+  return workspaceRows.map((workspace) => ({
+    ...workspace,
+    brandProfileCount: brandProfileCounts.get(workspace.id) ?? 0,
+    contentItemCount: contentItemCounts.get(workspace.id) ?? 0,
+  }));
+}
+
+function toWorkspaceSwitcherOption(
+  workspace: WorkspaceSummary,
+): WorkspaceSwitcherOption {
+  return {
+    ...workspace,
+    brandProfileCount: 0,
+    contentItemCount: 0,
+  };
 }
 
 export function isWorkspaceId(value: string) {
-  return uuidPattern.test(value);
+  return workspaceIdPattern.test(value);
 }
 
 export async function isUserWorkspaceMember({
@@ -77,4 +269,18 @@ export async function isUserWorkspaceMember({
     .limit(1);
 
   return Boolean(membership);
+}
+
+function revalidateActiveWorkspacePaths() {
+  revalidatePath("/", "layout");
+  revalidatePath("/");
+  revalidatePath("/analytics");
+  revalidatePath("/blitz");
+  revalidatePath("/calendar");
+  revalidatePath("/content");
+  revalidatePath("/library");
+  revalidatePath("/studio");
+  revalidatePath("/studio/clips");
+  revalidatePath("/studio/new");
+  revalidatePath("/trending");
 }
