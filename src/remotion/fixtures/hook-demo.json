@@ -1,0 +1,49 @@
+{
+  "format": "hook_demo",
+  "durationInFrames": 390,
+  "title": "From visitor to booked demo in one view",
+  "caption": "A hook-first product walkthrough.",
+  "hashtags": ["#productdemo", "#b2b", "#sales"],
+  "brand": {
+    "name": "Northstar CRM",
+    "handle": "@northstarcrm"
+  },
+  "theme": {
+    "background": "#172554",
+    "foreground": "#f8fafc",
+    "accent": "#fb7185",
+    "secondary": "#f97316",
+    "muted": "#bfdbfe"
+  },
+  "hookDemo": {
+    "hook": "Still guessing which content brings qualified leads?",
+    "subhook": "Here is the three-screen workflow that fixes it.",
+    "cta": "Export this angle for TikTok, Reels, and Shorts",
+    "shots": [
+      {
+        "image": {
+          "src": "placeholder:product",
+          "label": "Lead source"
+        },
+        "label": "Step 1",
+        "caption": "Capture every visitor source automatically."
+      },
+      {
+        "image": {
+          "src": "placeholder:graph",
+          "label": "Performance lift"
+        },
+        "label": "Step 2",
+        "caption": "Rank videos by demos booked, not vanity metrics."
+      },
+      {
+        "image": {
+          "src": "placeholder:checkout",
+          "label": "Export queue"
+        },
+        "label": "Step 3",
+        "caption": "Send winners straight into your publishing calendar."
+      }
+    ]
+  }
+}
