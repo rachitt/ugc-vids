@@ -13,6 +13,15 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+export type BrandProfileScrapedPage = {
+  label: "home" | "pricing" | "about";
+  url: string;
+  title: string | null;
+  description: string | null;
+  text: string;
+  status: number;
+};
+
 export const workspacePlan = pgEnum("workspace_plan", [
   "free",
   "starter",
@@ -197,10 +206,22 @@ export const brandProfiles = pgTable(
       .references(() => workspaces.id, { onDelete: "cascade" }),
     url: text("url").notNull(),
     scrapedSummary: text("scraped_summary"),
+    scrapedPages: jsonb("scraped_pages")
+      .$type<BrandProfileScrapedPage[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     productDesc: text("product_desc"),
     audience: text("audience"),
     tone: text("tone"),
+    painPoints: jsonb("pain_points")
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     nicheTags: jsonb("niche_tags")
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    hookAngles: jsonb("hook_angles")
       .$type<string[]>()
       .notNull()
       .default(sql`'[]'::jsonb`),
@@ -209,6 +230,10 @@ export const brandProfiles = pgTable(
       .notNull()
       .default(sql`'{}'::jsonb`),
     logoUrl: text("logo_url"),
+    analysisMetadata: jsonb("analysis_metadata")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -249,9 +274,12 @@ export const contentItems = pgTable(
     workspaceId: uuid("workspace_id")
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
-    brandProfileId: uuid("brand_profile_id").references(() => brandProfiles.id, {
-      onDelete: "set null",
-    }),
+    brandProfileId: uuid("brand_profile_id").references(
+      () => brandProfiles.id,
+      {
+        onDelete: "set null",
+      },
+    ),
     trendTemplateId: uuid("trend_template_id").references(
       () => trendTemplates.id,
       { onDelete: "set null" },
@@ -440,9 +468,7 @@ export const siteEvents = pgTable(
       .defaultNow(),
   },
   (table) => ({
-    workspaceIdIdx: index("site_events_workspace_id_idx").on(
-      table.workspaceId,
-    ),
+    workspaceIdIdx: index("site_events_workspace_id_idx").on(table.workspaceId),
     contentItemIdIdx: index("site_events_content_item_id_idx").on(
       table.contentItemId,
     ),
