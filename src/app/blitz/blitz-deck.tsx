@@ -221,9 +221,9 @@ export function BlitzDeck({
                   onPointerUp={(event) => handlePointerEnd(event, item)}
                   style={style}
                 >
-                  <div className="relative grid min-h-0 flex-1 grid-cols-[148px_1fr] gap-4 p-4">
+                  <div className="relative grid min-h-0 flex-1 grid-cols-[200px_1fr] gap-4 p-4">
                     <ContentThumbnail
-                      className="h-full min-h-[360px]"
+                      className="w-full self-center"
                       format={item.format}
                       thumbUrl={item.thumbUrl}
                     />

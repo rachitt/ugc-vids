@@ -136,7 +136,7 @@ export function LibraryGrid({ items, saveLimit }: LibraryGridProps) {
               key={item.id}
             >
               <ContentThumbnail
-                className="h-full min-h-[230px] sm:h-auto"
+                className="w-full self-center sm:self-start"
                 format={item.format}
                 thumbUrl={item.thumbUrl}
               />
