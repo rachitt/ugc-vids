@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { linearTiming, TransitionSeries } from "@remotion/transitions";
 import { slide } from "@remotion/transitions/slide";
 import {
@@ -36,14 +37,29 @@ const FALLBACK_BPM = 120;
 const MAX_DEMO_SHOTS = 4;
 const MIN_CTA_FRAMES = 54;
 const VIDEO_EXTENSION_PATTERN = /\.(mp4|webm|mov)(?:[?#].*)?$/i;
+const HOOK_CAPTION_START_FRAME = 4;
+const HOOK_CAPTION_MAX_CONTENT_WIDTH = 900;
 
 type HookDemoData = NonNullable<RemotionProps["hookDemo"]>;
 type HookDemoShot = HookDemoData["shots"][number];
+
+type RgbColor = {
+  b: number;
+  g: number;
+  r: number;
+};
 
 type BeatTiming = {
   bpm: number;
   downbeatOffsetSec: number;
   framesPerBeat: number;
+};
+
+type HookCaptionTheme = {
+  color: string;
+  highlightColor: string;
+  scrimStyle: CSSProperties;
+  textShadow: CSSProperties["textShadow"];
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -52,6 +68,178 @@ function clamp(value: number, min: number, max: number): number {
 
 function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function parseHexColor(color: string): RgbColor | null {
+  const match = color.trim().match(/^#?([\da-f]{3}|[\da-f]{6})$/iu);
+
+  if (!match) {
+    return null;
+  }
+
+  const hex =
+    match[1].length === 3
+      ? Array.from(match[1])
+          .map((character) => `${character}${character}`)
+          .join("")
+      : match[1];
+  const value = Number.parseInt(hex, 16);
+
+  return {
+    b: value & 255,
+    g: (value >> 8) & 255,
+    r: (value >> 16) & 255,
+  };
+}
+
+function rgbaFromThemeColor(
+  color: string,
+  alpha: number,
+  fallback: string,
+): string {
+  const rgb = parseHexColor(color);
+
+  return rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})` : fallback;
+}
+
+function relativeLuminance(color: string): number | null {
+  const rgb = parseHexColor(color);
+
+  if (!rgb) {
+    return null;
+  }
+
+  const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((channel) => {
+    const value = channel / 255;
+
+    return value <= 0.03928
+      ? value / 12.92
+      : ((value + 0.055) / 1.055) ** 2.4;
+  });
+
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrastRatio(a: number, b: number): number {
+  const lighter = Math.max(a, b);
+  const darker = Math.min(a, b);
+
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function averageContrastAgainstPalette(
+  textColor: string,
+  palette: string[],
+): number | null {
+  const textLuminance = relativeLuminance(textColor);
+  const paletteLuminances = palette
+    .map((color) => relativeLuminance(color))
+    .filter((luminance): luminance is number => luminance !== null);
+
+  if (textLuminance === null || paletteLuminances.length === 0) {
+    return null;
+  }
+
+  return (
+    paletteLuminances.reduce(
+      (total, luminance) => total + contrastRatio(textLuminance, luminance),
+      0,
+    ) / paletteLuminances.length
+  );
+}
+
+function getHookCaptionTheme(theme: RemotionTheme): HookCaptionTheme {
+  const accentPalette = [theme.accent, theme.secondary];
+  const darkTextContrast = averageContrastAgainstPalette(
+    theme.background,
+    accentPalette,
+  );
+  const lightTextContrast = averageContrastAgainstPalette(
+    theme.foreground,
+    accentPalette,
+  );
+  const useDarkText =
+    darkTextContrast === null || lightTextContrast === null
+      ? true
+      : darkTextContrast >= lightTextContrast;
+  const foregroundHighlight = rgbaFromThemeColor(
+    theme.foreground,
+    0.94,
+    "rgba(248, 250, 252, 0.94)",
+  );
+
+  if (useDarkText) {
+    const foregroundScrim = rgbaFromThemeColor(
+      theme.foreground,
+      0.82,
+      "rgba(248, 250, 252, 0.82)",
+    );
+    const foregroundScrimEnd = rgbaFromThemeColor(
+      theme.foreground,
+      0.66,
+      "rgba(248, 250, 252, 0.66)",
+    );
+    const foregroundLift = rgbaFromThemeColor(
+      theme.foreground,
+      0.48,
+      "rgba(248, 250, 252, 0.48)",
+    );
+    const foregroundGlow = rgbaFromThemeColor(
+      theme.foreground,
+      0.3,
+      "rgba(248, 250, 252, 0.3)",
+    );
+    const backgroundShade = rgbaFromThemeColor(
+      theme.background,
+      0.18,
+      "rgba(15, 23, 42, 0.18)",
+    );
+
+    return {
+      color: theme.background,
+      highlightColor: foregroundHighlight,
+      scrimStyle: {
+        background: `linear-gradient(180deg, ${foregroundScrim}, ${foregroundScrimEnd})`,
+        border: `1px solid ${backgroundShade}`,
+        boxShadow: `0 24px 68px ${backgroundShade}`,
+        inset: "-20px -28px",
+      },
+      textShadow: `0 2px 0 ${foregroundLift}, 0 14px 34px ${foregroundGlow}`,
+    };
+  }
+
+  const backgroundScrim = rgbaFromThemeColor(
+    theme.background,
+    0.78,
+    "rgba(15, 23, 42, 0.78)",
+  );
+  const backgroundScrimEnd = rgbaFromThemeColor(
+    theme.background,
+    0.62,
+    "rgba(15, 23, 42, 0.62)",
+  );
+  const backgroundShadow = rgbaFromThemeColor(
+    theme.background,
+    0.72,
+    "rgba(15, 23, 42, 0.72)",
+  );
+  const foregroundBorder = rgbaFromThemeColor(
+    theme.foreground,
+    0.16,
+    "rgba(248, 250, 252, 0.16)",
+  );
+
+  return {
+    color: theme.foreground,
+    highlightColor: foregroundHighlight,
+    scrimStyle: {
+      background: `linear-gradient(180deg, ${backgroundScrim}, ${backgroundScrimEnd})`,
+      border: `1px solid ${foregroundBorder}`,
+      boxShadow: `0 24px 70px ${backgroundShadow}`,
+      inset: "-20px -28px",
+    },
+    textShadow: `0 3px 8px ${backgroundShadow}, 0 16px 42px ${backgroundShadow}`,
+  };
 }
 
 function getBeatTiming(
@@ -202,6 +390,7 @@ function HookCard({
     2.4,
     5.2,
   );
+  const hookCaptionTheme = getHookCaptionTheme(theme);
   const subhookOpacity = interpolate(
     frame,
     [Math.max(14, hookCutFrame - 30), hookCutFrame - 10],
@@ -271,23 +460,23 @@ function HookCard({
       </div>
 
       <WordCaptions
-        color="#ffffff"
+        color={hookCaptionTheme.color}
         fontFamily={`${ARCHIVO_BLACK_FONT_FAMILY}, ${remotionFontFamily}`}
         fontSize={104}
-        highlightColor="#ffffff"
-        highlightMode="color"
-        maxLines={1}
-        startFrame={4}
+        holdLastPageUntilFrame={hookCutFrame}
+        highlightColor={hookCaptionTheme.highlightColor}
+        highlightMode="background"
+        maxContentWidth={HOOK_CAPTION_MAX_CONTENT_WIDTH}
+        maxLines={2}
+        scrimStyle={hookCaptionTheme.scrimStyle}
+        showScrim
+        startFrame={HOOK_CAPTION_START_FRAME}
         style={{
-          left: -84,
-          right: -84,
-          textShadow: "0 18px 42px rgba(0,0,0,0.38)",
+          opacity: 1 - exitProgress * 0.35,
           top: -38,
-          transform: `translateX(${-exitProgress * 170}px) skewX(${
-            -exitProgress * 5
-          }deg) scaleX(0.86)`,
         }}
         text={hook}
+        textShadow={hookCaptionTheme.textShadow}
         wordsPerSecond={wordsPerSecond}
       />
 
