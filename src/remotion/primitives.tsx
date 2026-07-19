@@ -1,10 +1,22 @@
-import { Img, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import type { CSSProperties, ReactNode } from "react";
+import {
+  AbsoluteFill,
+  Img,
+  interpolate,
+  spring,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 
 import type { RemotionProps, RemotionTheme } from "../lib/video/remotion-props";
+import {
+  ANTON_FONT_FAMILY,
+  REMOTION_FONT_STACK,
+  useRemotionFonts,
+} from "./fonts";
 import { resolveMediaSrc, themeOrDefault } from "./media";
 
-export const remotionFontFamily =
-  "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+export const remotionFontFamily = REMOTION_FONT_STACK;
 
 export function useEntrance(delayInFrames = 0) {
   const frame = useCurrentFrame();
@@ -170,6 +182,265 @@ export function BackgroundWash({ theme }: { theme: RemotionTheme }) {
           position: "absolute",
         }}
       />
+    </div>
+  );
+}
+
+function svgDataUri(svg: string): string {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function grainSvg(seed: number): string {
+  return svgDataUri(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+      <filter id="grain">
+        <feTurbulence type="fractalNoise" baseFrequency="0.78" numOctaves="4" seed="${seed}" stitchTiles="stitch"/>
+        <feColorMatrix type="saturate" values="0"/>
+        <feComponentTransfer>
+          <feFuncA type="linear" slope="0.48"/>
+        </feComponentTransfer>
+      </filter>
+      <rect width="240" height="240" filter="url(#grain)"/>
+    </svg>
+  `);
+}
+
+export type GrainOverlayProps = {
+  blendMode?: CSSProperties["mixBlendMode"];
+  opacity?: number;
+  size?: number;
+  style?: CSSProperties;
+};
+
+export function GrainOverlay({
+  blendMode = "overlay",
+  opacity = 0.06,
+  size = 240,
+  style,
+}: GrainOverlayProps) {
+  const frame = useCurrentFrame();
+  const seed = 11 + (frame % 37);
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundImage: `url("${grainSvg(seed)}")`,
+        backgroundRepeat: "repeat",
+        backgroundSize: `${size}px ${size}px`,
+        mixBlendMode: blendMode,
+        opacity,
+        pointerEvents: "none",
+        ...style,
+      }}
+    />
+  );
+}
+
+export type StickerChipProps = {
+  background?: string;
+  children: ReactNode;
+  color?: string;
+  emoji?: string;
+  rotationDeg?: number;
+  startFrame?: number;
+  style?: CSSProperties;
+};
+
+export function StickerChip({
+  background = "#facc15",
+  children,
+  color = "#111827",
+  emoji,
+  rotationDeg = -3,
+  startFrame = 0,
+  style,
+}: StickerChipProps) {
+  useRemotionFonts();
+
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const pop = spring({
+    config: {
+      damping: 15,
+      stiffness: 220,
+    },
+    fps,
+    frame: frame - startFrame,
+  });
+  const opacity = interpolate(frame, [startFrame, startFrame + 8], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const scale = 0.78 + Math.min(1, pop) * 0.22;
+
+  return (
+    <div
+      style={{
+        alignItems: "center",
+        background,
+        border: "4px solid rgba(255,255,255,0.92)",
+        borderRadius: 999,
+        boxShadow: "0 18px 0 rgba(0,0,0,0.28), 0 26px 48px rgba(0,0,0,0.28)",
+        color,
+        display: "inline-flex",
+        fontFamily: remotionFontFamily,
+        fontSize: 34,
+        fontWeight: 900,
+        gap: 10,
+        lineHeight: 1,
+        opacity,
+        padding: "18px 26px",
+        textTransform: "uppercase",
+        ...style,
+        transform: `rotate(${rotationDeg}deg) scale(${scale})`,
+        transformOrigin: "center",
+      }}
+    >
+      {emoji ? <span style={{ fontSize: "1.08em" }}>{emoji}</span> : null}
+      <span>{children}</span>
+    </div>
+  );
+}
+
+export type PhoneFrameProps = {
+  background?: string;
+  children?: ReactNode;
+  height?: number;
+  screenStyle?: CSSProperties;
+  style?: CSSProperties;
+  width?: number;
+};
+
+export function PhoneFrame({
+  background = "#0f172a",
+  children,
+  height = 1280,
+  screenStyle,
+  style,
+  width = 620,
+}: PhoneFrameProps) {
+  return (
+    <div
+      style={{
+        background: "linear-gradient(145deg, #111827 0%, #030712 100%)",
+        border: "4px solid rgba(255,255,255,0.16)",
+        borderRadius: 86,
+        boxShadow: "0 48px 120px rgba(0,0,0,0.5)",
+        boxSizing: "border-box",
+        height,
+        padding: 24,
+        position: "relative",
+        width,
+        ...style,
+      }}
+    >
+      <div
+        style={{
+          background: "#020617",
+          borderRadius: 999,
+          height: 34,
+          left: "50%",
+          position: "absolute",
+          top: 30,
+          transform: "translateX(-50%)",
+          width: 170,
+          zIndex: 3,
+        }}
+      />
+      <div
+        style={{
+          background,
+          borderRadius: 62,
+          boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.08)",
+          height: "100%",
+          overflow: "hidden",
+          position: "relative",
+          width: "100%",
+          ...screenStyle,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export type MemeTextProps = {
+  children?: ReactNode;
+  color?: string;
+  fontSize?: number;
+  maxWidth?: number | string;
+  strokeColor?: string;
+  strokeWidth?: number;
+  style?: CSSProperties;
+  text?: string;
+};
+
+function longestLineLength(text: string): number {
+  return text
+    .split(/\n/)
+    .map((line) => line.trim().length)
+    .reduce((longest, length) => Math.max(longest, length), 0);
+}
+
+function fitMemeTextSize(text: string, fontSize: number): number {
+  const longest = longestLineLength(text);
+
+  if (longest <= 18) {
+    return fontSize;
+  }
+
+  const scale = Math.max(0.58, Math.min(1, 18 / longest));
+
+  return Math.round(fontSize * scale);
+}
+
+export function MemeText({
+  children,
+  color = "#ffffff",
+  fontSize = 96,
+  maxWidth = "100%",
+  strokeColor = "#050505",
+  strokeWidth = 5,
+  style,
+  text,
+}: MemeTextProps) {
+  useRemotionFonts();
+
+  const content = text ?? children;
+  const plainText =
+    typeof text === "string"
+      ? text
+      : typeof children === "string"
+        ? children
+        : "";
+  const fittedFontSize = fitMemeTextSize(plainText, fontSize);
+
+  return (
+    <div
+      style={{
+        color,
+        fontFamily: `${ANTON_FONT_FAMILY}, ${remotionFontFamily}`,
+        fontSize: fittedFontSize,
+        fontWeight: 400,
+        lineHeight: 0.92,
+        margin: "0 auto",
+        maxWidth,
+        overflowWrap: "break-word",
+        textAlign: "center",
+        textShadow:
+          `0 ${strokeWidth}px 0 ${strokeColor}, ` +
+          `${strokeWidth}px 0 0 ${strokeColor}, ` +
+          `-${strokeWidth}px 0 0 ${strokeColor}, ` +
+          `0 -${strokeWidth}px 0 ${strokeColor}, ` +
+          `0 14px 28px rgba(0,0,0,0.45)`,
+        textTransform: "uppercase",
+        WebkitTextStroke: `${strokeWidth}px ${strokeColor}`,
+        whiteSpace: "pre-wrap",
+        ...style,
+      }}
+    >
+      {content}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import {
   REMOTION_VIDEO_WIDTH,
   RemotionPropsSchema,
 } from "../lib/video/remotion-props";
-import { remotionCompositions } from "./registry";
+import { primitivesDemoComposition, remotionCompositions } from "./registry";
 
 export function RemotionRoot() {
   return (
@@ -25,6 +25,15 @@ export function RemotionRoot() {
           width={REMOTION_VIDEO_WIDTH}
         />
       ))}
+      <Composition
+        component={primitivesDemoComposition.component}
+        defaultProps={primitivesDemoComposition.defaultProps}
+        durationInFrames={primitivesDemoComposition.durationInFrames}
+        fps={REMOTION_FPS}
+        height={REMOTION_VIDEO_HEIGHT}
+        id={primitivesDemoComposition.id}
+        width={REMOTION_VIDEO_WIDTH}
+      />
     </>
   );
 }

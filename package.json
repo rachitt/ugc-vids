@@ -16,6 +16,7 @@
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings=0",
     "start": "next start",
+    "stills": "tsx scripts/render-stills.ts",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "worker": "tsx worker/index.ts",
