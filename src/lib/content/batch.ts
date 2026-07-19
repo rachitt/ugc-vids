@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 
 import { db } from "../db";
 import { brandProfiles } from "../db/schema";
+import type { PromptRecipe } from "../trends/metadata";
 import {
   buildMixedFormatPlan,
   clampBatchSize,
@@ -29,13 +30,19 @@ export type MixedContentBatchResult = {
 
 type GenerateMixedContentBatchInput = {
   brandProfileId: string;
+  formats?: RenderableContentFormat[];
+  promptRecipe?: PromptRecipe;
   totalCount?: number;
+  trendTemplateId?: string | null;
   workspaceId: string;
 };
 
 export async function generateMixedContentBatch({
   brandProfileId,
+  formats,
+  promptRecipe,
   totalCount = DEFAULT_MIXED_BATCH_SIZE,
+  trendTemplateId,
   workspaceId,
 }: GenerateMixedContentBatchInput): Promise<MixedContentBatchResult> {
   const [brandProfile] = await db
@@ -53,7 +60,9 @@ export async function generateMixedContentBatch({
     throw new Error("Brand profile not found for this workspace.");
   }
 
-  const plan = buildMixedFormatPlan(clampBatchSize(totalCount));
+  const plan = formats?.length
+    ? formats.slice(0, clampBatchSize(formats.length))
+    : buildMixedFormatPlan(clampBatchSize(totalCount));
   const items: GeneratedContentItem[] = [];
   const errors: MixedContentBatchError[] = [];
 
@@ -65,6 +74,8 @@ export async function generateMixedContentBatch({
         brandProfile,
         count: 1,
         format,
+        promptRecipe,
+        trendTemplateId,
       });
 
       items.push(...result.items);

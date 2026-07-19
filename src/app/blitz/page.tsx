@@ -10,6 +10,8 @@ import {
 
 import { BlitzDeck } from "./blitz-deck";
 
+export const dynamic = "force-dynamic";
+
 const LOW_DECK_THRESHOLD = 3;
 
 export default async function BlitzPage() {
