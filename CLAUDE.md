@@ -27,3 +27,4 @@ UGC marketing SaaS clone of usefastlane.ai: website URL → AI brand profile →
 - `pnpm dev` — app; `pnpm worker` — render/scrape worker
 - `docker compose up -d` — Postgres + Redis
 - `pnpm db:migrate` / `pnpm db:studio` — Drizzle
+- `pnpm golden` — render and verify Remotion golden fixtures into `.renders/golden/` as a local/pre-PR check; not in CI yet

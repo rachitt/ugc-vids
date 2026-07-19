@@ -45,6 +45,10 @@ jobs:
       REDIS_URL: redis://localhost:6379
       BETTER_AUTH_URL: http://localhost:3000
       BETTER_AUTH_SECRET: ci-only-replace-with-real-secret-before-deploy
+      FASTLANE_DEFAULT_WORKSPACE_NAME: CI E2E Workspace
+      FASTLANE_FAKE_AI: "1"
+      FASTLANE_FAKE_SCRAPE: "1"
+      STORAGE_DRIVER: local
 
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +60,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install
+      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm build
+      - run: pnpm db:migrate
       - run: pnpm test:e2e

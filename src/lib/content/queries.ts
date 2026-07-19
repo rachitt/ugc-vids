@@ -3,6 +3,10 @@ import { and, count, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { contentItems, subscriptions, workspaces } from "@/lib/db/schema";
+import {
+  getDefaultWorkspaceName,
+  hasDefaultWorkspaceNameOverride,
+} from "@/lib/workspaces";
 
 import type {
   ContentItemSummary,
@@ -45,6 +49,22 @@ export function getPlanSaveCap(plan: WorkspacePlan) {
 
 export async function getActiveWorkspace(): Promise<WorkspaceSummary | null> {
   noStore();
+
+  if (hasDefaultWorkspaceNameOverride()) {
+    const [workspace] = await db
+      .select({
+        id: workspaces.id,
+        name: workspaces.name,
+        plan: workspaces.plan,
+      })
+      .from(workspaces)
+      .where(eq(workspaces.name, getDefaultWorkspaceName()))
+      .limit(1);
+
+    if (workspace) {
+      return workspace;
+    }
+  }
 
   const [workspace] = await db
     .select({

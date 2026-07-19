@@ -259,7 +259,9 @@ export function CalendarClient({
             <div className="grid max-h-[calc(100vh-220px)] gap-3 overflow-y-auto pr-1">
               {contentItems.map((item) => (
                 <article
+                  aria-label={`${item.hook} saved content`}
                   className="cursor-grab rounded-md border bg-card p-3 text-card-foreground shadow-sm transition hover:border-primary/30 active:cursor-grabbing"
+                  data-calendar-content-item-id={item.id}
                   draggable
                   key={item.id}
                   onDragStart={(event) => handleDragStart(event, item.id)}
@@ -615,6 +617,7 @@ type DropCellProps = {
 function DropCell({
   active,
   compact,
+  day,
   disabled,
   onDragEnter,
   onDragLeave,
@@ -628,12 +631,16 @@ function DropCell({
 
   return (
     <div
+      aria-label={`Schedule ${option.label} content on ${formatDateForA11y(day)}`}
       className={cn(
         "min-h-[132px] border-r border-t p-2 transition-colors",
         compact && "min-h-[56px] rounded-md border p-1.5",
         active ? "bg-accent/10 ring-2 ring-inset ring-ring" : "bg-background",
         disabled && "opacity-60",
       )}
+      data-calendar-drop-cell=""
+      data-date={toDateKey(day)}
+      data-platform={platform}
       onDragEnter={(event) => {
         event.preventDefault();
         if (!disabled) {
@@ -683,6 +690,14 @@ function DropCell({
       </div>
     </div>
   );
+}
+
+function formatDateForA11y(date: Date) {
+  return date.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function SlotCard({

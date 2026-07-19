@@ -7,13 +7,25 @@ const DEFAULT_WORKSPACE_NAME = "Default Workspace";
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+export function getDefaultWorkspaceName() {
+  return (
+    process.env.FASTLANE_DEFAULT_WORKSPACE_NAME?.trim() ||
+    DEFAULT_WORKSPACE_NAME
+  );
+}
+
+export function hasDefaultWorkspaceNameOverride() {
+  return Boolean(process.env.FASTLANE_DEFAULT_WORKSPACE_NAME?.trim());
+}
+
 export async function getOrCreateDefaultWorkspace() {
+  const workspaceName = getDefaultWorkspaceName();
   const [existingWorkspace] = await db
     .select({
       id: workspaces.id,
     })
     .from(workspaces)
-    .where(eq(workspaces.name, DEFAULT_WORKSPACE_NAME))
+    .where(eq(workspaces.name, workspaceName))
     .limit(1);
 
   if (existingWorkspace) {
@@ -23,7 +35,7 @@ export async function getOrCreateDefaultWorkspace() {
   const [workspace] = await db
     .insert(workspaces)
     .values({
-      name: DEFAULT_WORKSPACE_NAME,
+      name: workspaceName,
     })
     .returning({
       id: workspaces.id,
