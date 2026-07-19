@@ -61,6 +61,8 @@ const WallOfTextSchema = z.object({
   headline: z.string().min(1),
   body: z.string().min(1),
   sourceLabel: z.string().optional(),
+  timestampLabel: z.string().optional(),
+  footerCue: z.string().optional(),
   broll: z.array(AssetSchema).min(1).max(4).default([]),
 });
 
