@@ -1,19 +1,19 @@
 {
   "format": "slideshow",
   "durationInFrames": 360,
-  "title": "3 reasons teams switch before launch week",
-  "caption": "Turn product proof into a short-form slideshow.",
-  "hashtags": ["#growth", "#ugc", "#saas"],
+  "title": "Your launch week content is leaking demos",
+  "caption": "Proof, hooks, and export-ready angles in one sprint lane.",
+  "hashtags": ["#launch", "#ugc", "#saas"],
   "brand": {
     "name": "Northstar CRM",
     "handle": "@northstarcrm"
   },
   "theme": {
-    "background": "#0f172a",
+    "background": "#09090b",
     "foreground": "#f8fafc",
-    "accent": "#22c55e",
-    "secondary": "#38bdf8",
-    "muted": "#94a3b8"
+    "accent": "#facc15",
+    "secondary": "#22d3ee",
+    "muted": "#cbd5e1"
   },
   "music": {
     "src": "asset:music/upbeat-01",
@@ -24,27 +24,35 @@
     "slides": [
       {
         "image": {
-          "src": "asset:broll/broll-01",
-          "label": "Unified pipeline"
+          "src": "asset:broll/broll-23",
+          "label": "Lead source"
         },
-        "eyebrow": "Reason 1",
-        "caption": "Every lead source lands in one clean pipeline."
+        "eyebrow": "Leak 1",
+        "caption": "Winning clips sit across Slack, Drive, and stray notes."
       },
       {
         "image": {
-          "src": "asset:broll/broll-06",
-          "label": "Attribution view"
+          "src": "asset:broll/broll-11",
+          "label": "Performance lift"
         },
-        "eyebrow": "Reason 2",
-        "caption": "Marketing sees exactly which videos create demos."
+        "eyebrow": "Fix 1",
+        "caption": "Fastlane tags every proof point by offer, audience, and hook."
       },
       {
         "image": {
-          "src": "asset:broll/broll-22",
+          "src": "asset:broll/broll-24",
+          "label": "Export queue"
+        },
+        "eyebrow": "Fix 2",
+        "caption": "Creators get platform-ready angles before the standup ends."
+      },
+      {
+        "image": {
+          "src": "asset:broll/broll-02",
           "label": "Launch checklist"
         },
-        "eyebrow": "Reason 3",
-        "caption": "Operators can ship new offers without waiting on design."
+        "eyebrow": "Ship it",
+        "caption": "Your team posts daily without waiting on a design queue."
       }
     ]
   }
