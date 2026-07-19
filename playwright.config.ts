@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import { defineConfig, devices } from "@playwright/test";
 
 const e2eRunId =
@@ -31,9 +33,9 @@ export default defineConfig({
       ...process.env,
       FASTLANE_DEFAULT_WORKSPACE_NAME: e2eWorkspaceName,
       FASTLANE_E2E_RUN_ID: e2eRunId,
-      FASTLANE_FAKE_AI: process.env.FASTLANE_FAKE_AI,
-      FASTLANE_FAKE_SCRAPE: process.env.FASTLANE_FAKE_SCRAPE,
-      STORAGE_DRIVER: process.env.STORAGE_DRIVER,
+      FASTLANE_FAKE_AI: process.env.FASTLANE_FAKE_AI ?? "1",
+      FASTLANE_FAKE_SCRAPE: process.env.FASTLANE_FAKE_SCRAPE ?? "1",
+      STORAGE_DRIVER: process.env.STORAGE_DRIVER ?? "local",
     },
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,

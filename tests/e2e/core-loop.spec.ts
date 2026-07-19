@@ -52,7 +52,7 @@ test("runs the fake-AI core loop through render, calendar, and download", async 
     })
     .onConflictDoNothing();
 
-  const generationResponse = await page.request.post("/api/content/generate", {
+  const generationResponse = await page.request.post("/content/generate", {
     data: {
       brandProfileId: profile.id,
       totalCount: 3,
