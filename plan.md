@@ -29,7 +29,7 @@ Clone [usefastlane.ai](https://www.usefastlane.ai/) — a UGC marketing SaaS tha
 - **Video**: Remotion (`@remotion/renderer` on the worker; `@remotion/player` for in-browser preview so most UX never waits on a render)
 - **LLM**: Claude Agent SDK (per user preference — no raw API keys/langchain) for brand analysis, script/hook/caption generation
 - **Storage**: Cloudflare R2 (S3 API) for rendered MP4s, images, avatar assets
-- **Billing**: Stripe subscriptions + metered credits
+- **Billing**: none — CUT (user directive); plan caps/credits are free defaults only
 - Repo hygiene per user's standing prefs: `CLAUDE.md` + `workflows/lessons.md` (append-only), branch flow `feature → staging → main`, short commit messages, SSH remotes
 
 ## Data model (Drizzle schema, core tables)
@@ -83,9 +83,8 @@ Next.js app, Drizzle + Postgres docker-compose, Redis, better-auth, shadcn, R2 c
 - **Avatar *video* (talking head) stays stubbed**: architecture + `avatar_ugc` format exist; render adapter behind a feature flag ready for fal.ai (image-to-video + TTS + lipsync) in a later phase
 - Human UGC clip library: seeded/curated clips, style+gender filters, usable as hook footage in templates
 
-### Phase 7 — Billing + plan enforcement
-- Stripe checkout + portal; plans Free/$29/$49/$149
-- Middleware enforcing: workspace count, content saves, credits, library access tiers
+### ~~Phase 7 — Billing~~ — CUT (user directive 2026-07-19)
+**No billing in this app, ever.** No Stripe checkout/portal/webhooks/paywalls. Plan caps and credit allowances remain as free defaults; do not build payment flows or propose them.
 
 ### Phase 8 — Analytics + attribution
 - Embeddable site snippet → `site_events` with utm auto-tagging on exported captions (`?utm_source=tiktok&utm_content={item_id}`)
@@ -102,7 +101,7 @@ Next.js app, Drizzle + Postgres docker-compose, Redis, better-auth, shadcn, R2 c
 - Per phase: `pnpm build` + Playwright smoke of the new flow
 - E2E core loop (Phase 2-4 done): enter a real URL (e.g. one of user's own projects) → profile generated → Blitz-swipe 10 items → save 3 → render → download MP4 and play it → verify caption/hashtags copy
 - Render worker: golden-test each Remotion template with fixture props, assert MP4 duration/dimensions (1080×1920)
-- Billing: Stripe test-mode checkout → plan limits flip; credit ledger decrements on studio use
+- Credits: credit ledger decrements on studio use (no billing — cut)
 - Attribution: hit snippet-tagged URL locally → event row appears with correct content_item
 
 ## Execution notes
