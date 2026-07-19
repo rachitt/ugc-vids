@@ -366,15 +366,88 @@ export function PhoneFrame({
 }
 
 export type MemeTextProps = {
+  autoShrinkToFit?: boolean;
   children?: ReactNode;
   color?: string;
   fontSize?: number;
   maxWidth?: number | string;
+  maxLines?: number;
+  minFontSize?: number;
   strokeColor?: string;
   strokeWidth?: number;
   style?: CSSProperties;
   text?: string;
 };
+
+const ANTON_UNITS_PER_EM = 2048;
+const DEFAULT_ANTON_ADVANCE_WIDTH = 980;
+const ANTON_ADVANCE_WIDTHS: Record<string, number> = {
+  " ": 480,
+  '"': 878,
+  "#": 1119,
+  "$": 946,
+  "%": 2164,
+  "&": 1065,
+  "'": 438,
+  "(": 596,
+  ")": 596,
+  "+": 728,
+  ",": 484,
+  "-": 637,
+  ".": 468,
+  "/": 830,
+  "0": 1012,
+  "1": 677,
+  "2": 1012,
+  "3": 1012,
+  "4": 1012,
+  "5": 1012,
+  "6": 1012,
+  "7": 1012,
+  "8": 1012,
+  "9": 1012,
+  ":": 495,
+  "=": 637,
+  "?": 1008,
+  A: 994,
+  B: 980,
+  C: 971,
+  D: 1010,
+  E: 843,
+  F: 817,
+  G: 993,
+  H: 1022,
+  I: 464,
+  J: 955,
+  K: 967,
+  L: 814,
+  M: 1528,
+  N: 1020,
+  O: 996,
+  P: 967,
+  Q: 1011,
+  R: 976,
+  S: 945,
+  T: 810,
+  U: 970,
+  V: 961,
+  W: 1458,
+  X: 991,
+  Y: 914,
+  Z: 840,
+};
+
+function normalizedMemeText(text: string): string {
+  return text.trim().replace(/\s+/g, " ");
+}
+
+function estimateAntonAdvance(text: string): number {
+  return Array.from(text.toUpperCase()).reduce(
+    (total, character) =>
+      total + (ANTON_ADVANCE_WIDTHS[character] ?? DEFAULT_ANTON_ADVANCE_WIDTH),
+    0,
+  );
+}
 
 function longestLineLength(text: string): number {
   return text
@@ -395,11 +468,149 @@ function fitMemeTextSize(text: string, fontSize: number): number {
   return Math.round(fontSize * scale);
 }
 
+function splitMemeTextIntoLines({
+  fontSize,
+  maxLines,
+  maxWidth,
+  strokeWidth,
+  text,
+}: {
+  fontSize: number;
+  maxLines: number;
+  maxWidth: number | string;
+  strokeWidth: number;
+  text: string;
+}): string[] {
+  const explicitLines = text
+    .split(/\n/)
+    .map((line) => normalizedMemeText(line))
+    .filter(Boolean);
+
+  if (explicitLines.length > 1 && explicitLines.length <= maxLines) {
+    return explicitLines;
+  }
+
+  const normalized = normalizedMemeText(text);
+
+  if (normalized.length === 0) {
+    return [normalized];
+  }
+
+  const words = normalized.split(" ");
+  const lineCount = Math.max(1, Math.min(maxLines, words.length));
+  const numericMaxWidth = typeof maxWidth === "number" ? maxWidth : undefined;
+
+  if (
+    lineCount === 1 ||
+    (numericMaxWidth !== undefined &&
+      estimateMemeTextWidth(normalized, fontSize, strokeWidth) <=
+        numericMaxWidth)
+  ) {
+    return [normalized];
+  }
+
+  if (numericMaxWidth === undefined && normalized.length <= 22) {
+    return [normalized];
+  }
+
+  const targetAdvance = estimateAntonAdvance(normalized) / lineCount;
+  const splitMemo = new Map<string, string[]>();
+
+  function chooseLines(startIndex: number, remainingLines: number): string[] {
+    const memoKey = `${startIndex}:${remainingLines}`;
+    const memoized = splitMemo.get(memoKey);
+
+    if (memoized) {
+      return memoized;
+    }
+
+    if (remainingLines === 1) {
+      const lines = [words.slice(startIndex).join(" ")];
+      splitMemo.set(memoKey, lines);
+      return lines;
+    }
+
+    const maxEnd = words.length - remainingLines + 1;
+    let bestLines: string[] | undefined;
+    let bestScore = Number.POSITIVE_INFINITY;
+
+    for (let endIndex = startIndex + 1; endIndex <= maxEnd; endIndex += 1) {
+      const firstLine = words.slice(startIndex, endIndex).join(" ");
+      const nextLines = chooseLines(endIndex, remainingLines - 1);
+      const lines = [firstLine, ...nextLines];
+      const advances = lines.map(estimateAntonAdvance);
+      const widestAdvance = Math.max(...advances);
+      const balancePenalty = advances.reduce(
+        (total, advance) => total + Math.abs(advance - targetAdvance),
+        0,
+      );
+      const score = widestAdvance * 1000 + balancePenalty;
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestLines = lines;
+      }
+    }
+
+    const lines = bestLines ?? [words.slice(startIndex).join(" ")];
+    splitMemo.set(memoKey, lines);
+
+    return lines;
+  }
+
+  return chooseLines(0, lineCount);
+}
+
+function estimateMemeTextWidth(
+  text: string,
+  fontSize: number,
+  strokeWidth: number,
+): number {
+  return (
+    (estimateAntonAdvance(text) / ANTON_UNITS_PER_EM) * fontSize +
+    strokeWidth * 2
+  );
+}
+
+function fitMemeTextSizeToWidth({
+  fontSize,
+  lines,
+  maxWidth,
+  minFontSize,
+  strokeWidth,
+}: {
+  fontSize: number;
+  lines: string[];
+  maxWidth: number | string;
+  minFontSize?: number;
+  strokeWidth: number;
+}): number {
+  if (typeof maxWidth !== "number") {
+    return fitMemeTextSize(lines.join("\n"), fontSize);
+  }
+
+  const widestAdvance = Math.max(...lines.map(estimateAntonAdvance));
+
+  if (widestAdvance === 0) {
+    return fontSize;
+  }
+
+  const availableTextWidth = Math.max(1, maxWidth - strokeWidth * 2);
+  const fittedFontSize = Math.floor(
+    (availableTextWidth * ANTON_UNITS_PER_EM) / widestAdvance,
+  );
+
+  return Math.max(minFontSize ?? 1, Math.min(fontSize, fittedFontSize));
+}
+
 export function MemeText({
+  autoShrinkToFit = false,
   children,
   color = "#ffffff",
   fontSize = 96,
   maxWidth = "100%",
+  maxLines,
+  minFontSize,
   strokeColor = "#050505",
   strokeWidth = 5,
   style,
@@ -414,7 +625,28 @@ export function MemeText({
       : typeof children === "string"
         ? children
         : "";
-  const fittedFontSize = fitMemeTextSize(plainText, fontSize);
+  const fittedLines =
+    plainText.length > 0 && maxLines !== undefined
+      ? splitMemeTextIntoLines({
+          fontSize,
+          maxLines,
+          maxWidth,
+          strokeWidth,
+          text: plainText,
+        })
+      : undefined;
+  const fittedText = fittedLines?.join("\n") ?? plainText;
+  const fittedFontSize =
+    autoShrinkToFit && fittedLines
+      ? fitMemeTextSizeToWidth({
+          fontSize,
+          lines: fittedLines,
+          maxWidth,
+          minFontSize,
+          strokeWidth,
+        })
+      : fitMemeTextSize(fittedText, fontSize);
+  const renderedContent = fittedLines ? fittedLines.join("\n") : content;
 
   return (
     <div
@@ -436,11 +668,17 @@ export function MemeText({
           `0 14px 28px rgba(0,0,0,0.45)`,
         textTransform: "uppercase",
         WebkitTextStroke: `${strokeWidth}px ${strokeColor}`,
-        whiteSpace: "pre-wrap",
+        whiteSpace: fittedLines ? "pre" : "pre-wrap",
         ...style,
+        ...(fittedLines
+          ? {
+              overflow: "visible",
+              textOverflow: "clip",
+            }
+          : {}),
       }}
     >
-      {content}
+      {renderedContent}
     </div>
   );
 }

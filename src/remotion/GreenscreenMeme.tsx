@@ -29,35 +29,6 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function toTwoLineMemeText(text: string): string {
-  const normalized = text.trim().replace(/\s+/g, " ");
-  const words = normalized.split(" ");
-
-  if (words.length <= 1 || normalized.length <= 22) {
-    return normalized;
-  }
-
-  let bestSplit = 1;
-  let bestScore = Number.POSITIVE_INFINITY;
-
-  for (let index = 1; index < words.length; index += 1) {
-    const firstLine = words.slice(0, index).join(" ");
-    const secondLine = words.slice(index).join(" ");
-    const longestLine = Math.max(firstLine.length, secondLine.length);
-    const balance = Math.abs(firstLine.length - secondLine.length);
-    const score = longestLine * 2 + balance;
-
-    if (score < bestScore) {
-      bestScore = score;
-      bestSplit = index;
-    }
-  }
-
-  return `${words.slice(0, bestSplit).join(" ")}\n${words
-    .slice(bestSplit)
-    .join(" ")}`;
-}
-
 function captionFontSize(text: string): number {
   return clamp(64 - Math.max(0, text.length - 34) * 0.62, 44, 64);
 }
@@ -118,6 +89,7 @@ export function GreenscreenMeme(inputProps: RemotionProps) {
     frame: frame - firstDownbeatFrame,
     durationInFrames: 11,
   });
+  const titleProgress = Math.min(1, titlePop);
   const titleOpacity = interpolate(
     frame,
     [firstDownbeatFrame, firstDownbeatFrame + 5],
@@ -149,7 +121,6 @@ export function GreenscreenMeme(inputProps: RemotionProps) {
       extrapolateRight: "clamp",
     },
   );
-  const topText = toTwoLineMemeText(props.title);
   const bandColor = meme.captionBar ?? theme.background ?? "#050505";
 
   return (
@@ -192,25 +163,21 @@ export function GreenscreenMeme(inputProps: RemotionProps) {
           opacity: titleOpacity,
           position: "absolute",
           right: RIGHT_SAFE + 56,
-          top: TOP_SAFE + 24,
-          transform: `translateY(${(1 - titlePop) * 22}px) scale(${
-            0.82 + titlePop * 0.18
+          top: TOP_SAFE,
+          transform: `translateY(${(1 - titleProgress) * 22}px) scale(${
+            0.82 + titleProgress * 0.18
           })`,
           transformOrigin: "center top",
           zIndex: 6,
         }}
       >
         <MemeText
+          autoShrinkToFit
           fontSize={112}
+          maxLines={2}
           maxWidth={900}
           strokeWidth={6}
-          style={{
-            display: "-webkit-box",
-            overflow: "hidden",
-            WebkitBoxOrient: "vertical",
-            WebkitLineClamp: 2,
-          }}
-          text={topText}
+          text={props.title}
         />
       </div>
 
