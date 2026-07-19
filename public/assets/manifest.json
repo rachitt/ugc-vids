@@ -1,0 +1,698 @@
+{
+  "music": [
+    {
+      "id": "music/chill-01",
+      "file": "assets/music/chill-01.mp3",
+      "bpm": 77,
+      "downbeatOffsetSec": 0,
+      "mood": "chill",
+      "durationSec": 49.9
+    },
+    {
+      "id": "music/chill-02",
+      "file": "assets/music/chill-02.mp3",
+      "bpm": 95,
+      "downbeatOffsetSec": 0,
+      "mood": "chill",
+      "durationSec": 40.4
+    },
+    {
+      "id": "music/chill-03",
+      "file": "assets/music/chill-03.mp3",
+      "bpm": 70,
+      "downbeatOffsetSec": 0,
+      "mood": "chill",
+      "durationSec": 76.4
+    },
+    {
+      "id": "music/epic-01",
+      "file": "assets/music/epic-01.mp3",
+      "bpm": 128,
+      "downbeatOffsetSec": 0,
+      "mood": "epic",
+      "durationSec": 24.0
+    },
+    {
+      "id": "music/epic-02",
+      "file": "assets/music/epic-02.mp3",
+      "bpm": 106,
+      "downbeatOffsetSec": 0,
+      "mood": "epic",
+      "durationSec": 54.0
+    },
+    {
+      "id": "music/tense-01",
+      "file": "assets/music/tense-01.mp3",
+      "bpm": 94,
+      "downbeatOffsetSec": 0,
+      "mood": "tense",
+      "durationSec": 28.4
+    },
+    {
+      "id": "music/tense-02",
+      "file": "assets/music/tense-02.mp3",
+      "bpm": 86,
+      "downbeatOffsetSec": 0,
+      "mood": "tense",
+      "durationSec": 44.7
+    },
+    {
+      "id": "music/upbeat-01",
+      "file": "assets/music/upbeat-01.mp3",
+      "bpm": 140,
+      "downbeatOffsetSec": 0,
+      "mood": "upbeat",
+      "durationSec": 20.6
+    },
+    {
+      "id": "music/upbeat-02",
+      "file": "assets/music/upbeat-02.mp3",
+      "bpm": 105,
+      "downbeatOffsetSec": 0,
+      "mood": "upbeat",
+      "durationSec": 33.5
+    },
+    {
+      "id": "music/upbeat-03",
+      "file": "assets/music/upbeat-03.mp3",
+      "bpm": 124,
+      "downbeatOffsetSec": 0,
+      "mood": "upbeat",
+      "durationSec": 22.5
+    },
+    {
+      "id": "music/upbeat-04",
+      "file": "assets/music/upbeat-04.mp3",
+      "bpm": 119,
+      "downbeatOffsetSec": 0,
+      "mood": "upbeat",
+      "durationSec": 75.4
+    }
+  ],
+  "memeBackgrounds": [
+    {
+      "id": "meme-bg/memebg-01",
+      "file": "assets/meme-bg/memebg-01.webp",
+      "tags": [
+        "reaction",
+        "dramatic",
+        "bw"
+      ]
+    },
+    {
+      "id": "meme-bg/memebg-02",
+      "file": "assets/meme-bg/memebg-02.webp",
+      "tags": [
+        "vintage",
+        "surprised"
+      ]
+    },
+    {
+      "id": "meme-bg/memebg-03",
+      "file": "assets/meme-bg/memebg-03.webp",
+      "tags": [
+        "chaotic",
+        "funny",
+        "outdoor"
+      ]
+    },
+    {
+      "id": "meme-bg/memebg-04",
+      "file": "assets/meme-bg/memebg-04.webp",
+      "tags": [
+        "boardroom",
+        "office"
+      ]
+    },
+    {
+      "id": "meme-bg/memebg-05",
+      "file": "assets/meme-bg/memebg-05.webp",
+      "tags": [
+        "boardroom",
+        "office",
+        "corporate"
+      ]
+    },
+    {
+      "id": "meme-bg/memebg-06",
+      "file": "assets/meme-bg/memebg-06.webp",
+      "tags": [
+        "meeting-room",
+        "dark",
+        "moody"
+      ]
+    },
+    {
+      "id": "meme-bg/memebg-07",
+      "file": "assets/meme-bg/memebg-07.webp",
+      "tags": [
+        "classroom",
+        "dark",
+        "moody"
+      ]
+    },
+    {
+      "id": "meme-bg/memebg-08",
+      "file": "assets/meme-bg/memebg-08.webp",
+      "tags": [
+        "subway",
+        "transit",
+        "urban"
+      ]
+    },
+    {
+      "id": "meme-bg/memebg-09",
+      "file": "assets/meme-bg/memebg-09.webp",
+      "tags": [
+        "auditorium",
+        "event"
+      ]
+    },
+    {
+      "id": "meme-bg/memebg-10",
+      "file": "assets/meme-bg/memebg-10.webp",
+      "tags": [
+        "stadium",
+        "crowd",
+        "colorful"
+      ]
+    },
+    {
+      "id": "meme-bg/memebg-11",
+      "file": "assets/meme-bg/memebg-11.webp",
+      "tags": [
+        "kitchen",
+        "home",
+        "interior"
+      ]
+    },
+    {
+      "id": "meme-bg/memebg-12",
+      "file": "assets/meme-bg/memebg-12.webp",
+      "tags": [
+        "kitchen",
+        "luxury",
+        "interior"
+      ]
+    },
+    {
+      "id": "meme-bg/memebg-13",
+      "file": "assets/meme-bg/memebg-13.webp",
+      "tags": [
+        "street",
+        "neon",
+        "retro",
+        "night"
+      ]
+    },
+    {
+      "id": "meme-bg/memebg-14",
+      "file": "assets/meme-bg/memebg-14.webp",
+      "tags": [
+        "neon",
+        "sign",
+        "night"
+      ]
+    },
+    {
+      "id": "meme-bg/memebg-15",
+      "file": "assets/meme-bg/memebg-15.webp",
+      "tags": [
+        "city",
+        "highway",
+        "night",
+        "aerial"
+      ]
+    }
+  ],
+  "gradients": [
+    {
+      "id": "gradients/gradient-01",
+      "file": "assets/gradients/gradient-01.webp",
+      "tone": "dark"
+    },
+    {
+      "id": "gradients/gradient-02",
+      "file": "assets/gradients/gradient-02.webp",
+      "tone": "dark"
+    },
+    {
+      "id": "gradients/gradient-03",
+      "file": "assets/gradients/gradient-03.webp",
+      "tone": "dark"
+    },
+    {
+      "id": "gradients/gradient-04",
+      "file": "assets/gradients/gradient-04.webp",
+      "tone": "dark"
+    },
+    {
+      "id": "gradients/gradient-05",
+      "file": "assets/gradients/gradient-05.webp",
+      "tone": "vivid"
+    },
+    {
+      "id": "gradients/gradient-06",
+      "file": "assets/gradients/gradient-06.webp",
+      "tone": "vivid"
+    },
+    {
+      "id": "gradients/gradient-07",
+      "file": "assets/gradients/gradient-07.webp",
+      "tone": "vivid"
+    },
+    {
+      "id": "gradients/gradient-08",
+      "file": "assets/gradients/gradient-08.webp",
+      "tone": "vivid"
+    },
+    {
+      "id": "gradients/gradient-09",
+      "file": "assets/gradients/gradient-09.webp",
+      "tone": "light"
+    },
+    {
+      "id": "gradients/gradient-10",
+      "file": "assets/gradients/gradient-10.webp",
+      "tone": "light"
+    }
+  ],
+  "broll": [
+    {
+      "id": "broll/broll-01",
+      "file": "assets/broll/broll-01.webp",
+      "kind": "image",
+      "tags": [
+        "laptop",
+        "typing",
+        "work"
+      ]
+    },
+    {
+      "id": "broll/broll-02",
+      "file": "assets/broll/broll-02.webp",
+      "kind": "image",
+      "tags": [
+        "laptop",
+        "typing",
+        "closeup"
+      ]
+    },
+    {
+      "id": "broll/broll-03",
+      "file": "assets/broll/broll-03.webp",
+      "kind": "image",
+      "tags": [
+        "city",
+        "skyline",
+        "night"
+      ]
+    },
+    {
+      "id": "broll/broll-04",
+      "file": "assets/broll/broll-04.webp",
+      "kind": "image",
+      "tags": [
+        "city",
+        "skyline",
+        "water"
+      ]
+    },
+    {
+      "id": "broll/broll-05",
+      "file": "assets/broll/broll-05.webp",
+      "kind": "image",
+      "tags": [
+        "city",
+        "aerial",
+        "futuristic"
+      ]
+    },
+    {
+      "id": "broll/broll-06",
+      "file": "assets/broll/broll-06.webp",
+      "kind": "image",
+      "tags": [
+        "phone",
+        "hand",
+        "app"
+      ]
+    },
+    {
+      "id": "broll/broll-07",
+      "file": "assets/broll/broll-07.webp",
+      "kind": "image",
+      "tags": [
+        "money",
+        "cash",
+        "finance"
+      ]
+    },
+    {
+      "id": "broll/broll-08",
+      "file": "assets/broll/broll-08.webp",
+      "kind": "image",
+      "tags": [
+        "fitness",
+        "gym",
+        "gear"
+      ]
+    },
+    {
+      "id": "broll/broll-09",
+      "file": "assets/broll/broll-09.webp",
+      "kind": "image",
+      "tags": [
+        "fitness",
+        "dumbbell",
+        "minimal"
+      ]
+    },
+    {
+      "id": "broll/broll-10",
+      "file": "assets/broll/broll-10.webp",
+      "kind": "image",
+      "tags": [
+        "fitness",
+        "dumbbell",
+        "home"
+      ]
+    },
+    {
+      "id": "broll/broll-11",
+      "file": "assets/broll/broll-11.webp",
+      "kind": "image",
+      "tags": [
+        "keyboard",
+        "desk",
+        "tech"
+      ]
+    },
+    {
+      "id": "broll/broll-12",
+      "file": "assets/broll/broll-12.webp",
+      "kind": "image",
+      "tags": [
+        "sunset",
+        "water",
+        "calm"
+      ]
+    },
+    {
+      "id": "broll/broll-13",
+      "file": "assets/broll/broll-13.webp",
+      "kind": "image",
+      "tags": [
+        "street",
+        "travel",
+        "europe"
+      ]
+    },
+    {
+      "id": "broll/broll-14",
+      "file": "assets/broll/broll-14.webp",
+      "kind": "image",
+      "tags": [
+        "supermarket",
+        "retail",
+        "products"
+      ]
+    },
+    {
+      "id": "broll/broll-15",
+      "file": "assets/broll/broll-15.webp",
+      "kind": "image",
+      "tags": [
+        "shopping",
+        "gift",
+        "retail"
+      ]
+    },
+    {
+      "id": "broll/broll-16",
+      "file": "assets/broll/broll-16.webp",
+      "kind": "image",
+      "tags": [
+        "cafe",
+        "interior",
+        "cozy"
+      ]
+    },
+    {
+      "id": "broll/broll-17",
+      "file": "assets/broll/broll-17.webp",
+      "kind": "image",
+      "tags": [
+        "coffee",
+        "mug",
+        "morning"
+      ]
+    },
+    {
+      "id": "broll/broll-18",
+      "file": "assets/broll/broll-18.webp",
+      "kind": "image",
+      "tags": [
+        "coffee",
+        "hands",
+        "winter"
+      ]
+    },
+    {
+      "id": "broll/broll-19",
+      "file": "assets/broll/broll-19.webp",
+      "kind": "image",
+      "tags": [
+        "phone",
+        "urban",
+        "person"
+      ]
+    },
+    {
+      "id": "broll/broll-20",
+      "file": "assets/broll/broll-20.webp",
+      "kind": "image",
+      "tags": [
+        "outdoors",
+        "hiking",
+        "adventure"
+      ]
+    },
+    {
+      "id": "broll/broll-21",
+      "file": "assets/broll/broll-21.webp",
+      "kind": "image",
+      "tags": [
+        "workspace",
+        "keyboard",
+        "minimal"
+      ]
+    },
+    {
+      "id": "broll/broll-22",
+      "file": "assets/broll/broll-22.webp",
+      "kind": "image",
+      "tags": [
+        "desk",
+        "typing",
+        "overhead"
+      ]
+    },
+    {
+      "id": "broll/broll-23",
+      "file": "assets/broll/broll-23.webp",
+      "kind": "image",
+      "tags": [
+        "desk",
+        "laptop",
+        "clean"
+      ]
+    },
+    {
+      "id": "broll/broll-24",
+      "file": "assets/broll/broll-24.webp",
+      "kind": "image",
+      "tags": [
+        "payment",
+        "card",
+        "commerce"
+      ]
+    },
+    {
+      "id": "broll/broll-25",
+      "file": "assets/broll/broll-25.webp",
+      "kind": "image",
+      "tags": [
+        "running",
+        "fitness",
+        "road"
+      ]
+    },
+    {
+      "id": "broll/clip-01",
+      "file": "assets/broll/clip-01.mp4",
+      "kind": "video",
+      "tags": [
+        "typing",
+        "laptop",
+        "work"
+      ],
+      "durationSec": 6
+    },
+    {
+      "id": "broll/clip-02",
+      "file": "assets/broll/clip-02.mp4",
+      "kind": "video",
+      "tags": [
+        "typing",
+        "keyboard",
+        "closeup"
+      ],
+      "durationSec": 6
+    },
+    {
+      "id": "broll/clip-03",
+      "file": "assets/broll/clip-03.mp4",
+      "kind": "video",
+      "tags": [
+        "phone",
+        "scrolling",
+        "couch"
+      ],
+      "durationSec": 6
+    },
+    {
+      "id": "broll/clip-04",
+      "file": "assets/broll/clip-04.mp4",
+      "kind": "video",
+      "tags": [
+        "office",
+        "paperwork",
+        "busy"
+      ],
+      "durationSec": 6
+    },
+    {
+      "id": "broll/clip-05",
+      "file": "assets/broll/clip-05.mp4",
+      "kind": "video",
+      "tags": [
+        "money",
+        "cash",
+        "counting"
+      ],
+      "durationSec": 6
+    },
+    {
+      "id": "broll/clip-06",
+      "file": "assets/broll/clip-06.mp4",
+      "kind": "video",
+      "tags": [
+        "counter",
+        "retail",
+        "writing"
+      ],
+      "durationSec": 6
+    },
+    {
+      "id": "broll/clip-07",
+      "file": "assets/broll/clip-07.mp4",
+      "kind": "video",
+      "tags": [
+        "city",
+        "train",
+        "urban"
+      ],
+      "durationSec": 6
+    },
+    {
+      "id": "broll/clip-08",
+      "file": "assets/broll/clip-08.mp4",
+      "kind": "video",
+      "tags": [
+        "coffee",
+        "pour",
+        "closeup"
+      ],
+      "durationSec": 6
+    },
+    {
+      "id": "broll/clip-09",
+      "file": "assets/broll/clip-09.mp4",
+      "kind": "video",
+      "tags": [
+        "gym",
+        "workout",
+        "intense"
+      ],
+      "durationSec": 6
+    },
+    {
+      "id": "broll/clip-10",
+      "file": "assets/broll/clip-10.mp4",
+      "kind": "video",
+      "tags": [
+        "shopping",
+        "supermarket",
+        "cart"
+      ],
+      "durationSec": 6
+    }
+  ],
+  "personas": [
+    {
+      "id": "personas/persona-01",
+      "file": "assets/personas/persona-01.webp",
+      "vibe": [
+        "professional",
+        "phone",
+        "walking"
+      ]
+    },
+    {
+      "id": "personas/persona-03",
+      "file": "assets/personas/persona-03.webp",
+      "vibe": [
+        "creator",
+        "podcast",
+        "talking"
+      ]
+    },
+    {
+      "id": "personas/persona-04",
+      "file": "assets/personas/persona-04.webp",
+      "vibe": [
+        "creator",
+        "streamer",
+        "headphones"
+      ]
+    },
+    {
+      "id": "personas/persona-05",
+      "file": "assets/personas/persona-05.webp",
+      "vibe": [
+        "dramatic",
+        "reaction",
+        "bw"
+      ]
+    },
+    {
+      "id": "personas/persona-07",
+      "file": "assets/personas/persona-07.webp",
+      "vibe": [
+        "cartoon",
+        "thumbs-up",
+        "positive"
+      ]
+    },
+    {
+      "id": "personas/persona-08",
+      "file": "assets/personas/persona-08.webp",
+      "vibe": [
+        "cartoon",
+        "friendly",
+        "waving"
+      ]
+    }
+  ]
+}

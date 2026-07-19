@@ -1,4 +1,4 @@
-import { z } from "../../../node_modules/.pnpm/zod@4.4.3/node_modules/zod/index.js";
+import { z } from "zod";
 import {
   renderableContentFormats,
   type RenderableContentFormat,
