@@ -12,8 +12,21 @@ import { REMOTION_FONT_STACK, useRemotionFonts } from "./fonts";
 
 const DEFAULT_WORDS_PER_SECOND = 5.5;
 const DEFAULT_MAX_LINES = 2;
-const WORDS_PER_LINE = 5;
-const MAX_LINE_CHARS = 24;
+const DEFAULT_CAPTION_FONT_SIZE = 68;
+const DEFAULT_HORIZONTAL_PADDING = 90;
+const DEFAULT_MAX_CONTENT_WIDTH = 1080 - DEFAULT_HORIZONTAL_PADDING * 2;
+const CAPTION_FONT_WEIGHT = 900;
+const WORD_MARGIN_X_EM = 0.06;
+const WORD_PADDING_X_EM = 0.18;
+const DEFAULT_TEXT_SHADOW =
+  "0 2px 4px rgba(0,0,0,0.52), 0 8px 24px rgba(0,0,0,0.38), 0 0 2px rgba(0,0,0,0.72)";
+const DEFAULT_SCRIM_STYLE: CSSProperties = {
+  background:
+    "linear-gradient(180deg, rgba(0,0,0,0.34), rgba(0,0,0,0.2))",
+  borderRadius: 28,
+  inset: "-18px -24px",
+  position: "absolute",
+};
 
 export type WordCaptionToken = {
   index: number;
@@ -34,6 +47,9 @@ export type WordCaptionTimingOptions = {
   text: string;
   startFrame: number;
   fps: number;
+  fontFamily?: string;
+  fontSize?: number;
+  maxContentWidth?: number;
   wordsPerSecond?: number;
   maxLines?: number;
 };
@@ -52,9 +68,28 @@ export type WordCaptionsProps = {
   color?: string;
   highlightColor?: string;
   highlightMode?: "background" | "color";
+  holdLastPageUntilFrame?: number;
+  maxContentWidth?: number;
   maxLines?: number;
+  scrimStyle?: CSSProperties;
+  showScrim?: boolean;
   style?: CSSProperties;
+  textShadow?: CSSProperties["textShadow"];
 };
+
+type WordCaptionLayoutOptions = {
+  fontFamily?: string;
+  fontSize?: number;
+  maxContentWidth?: number;
+};
+
+type NormalizedWordCaptionLayout = {
+  fontFamily: string;
+  fontSize: number;
+  maxContentWidth: number;
+};
+
+let measureContext: CanvasRenderingContext2D | null | undefined;
 
 function normalizeWords(text: string): string[] {
   return text
@@ -68,6 +103,148 @@ function wordWeight(word: string): number {
   const letterCount = word.replace(/[^\p{L}\p{N}]/gu, "").length;
 
   return 0.86 + Math.min(14, Math.max(1, letterCount)) * 0.035;
+}
+
+function normalizePositiveNumber(value: number | undefined, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : fallback;
+}
+
+function normalizeCaptionLayout({
+  fontFamily = REMOTION_FONT_STACK,
+  fontSize = DEFAULT_CAPTION_FONT_SIZE,
+  maxContentWidth = DEFAULT_MAX_CONTENT_WIDTH,
+}: WordCaptionLayoutOptions): NormalizedWordCaptionLayout {
+  const normalizedFontFamily =
+    fontFamily.trim().length > 0 ? fontFamily : REMOTION_FONT_STACK;
+
+  return {
+    fontFamily: normalizedFontFamily,
+    fontSize: normalizePositiveNumber(fontSize, DEFAULT_CAPTION_FONT_SIZE),
+    maxContentWidth: normalizePositiveNumber(
+      maxContentWidth,
+      DEFAULT_MAX_CONTENT_WIDTH,
+    ),
+  };
+}
+
+function getMeasureContext() {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  measureContext ??= document.createElement("canvas").getContext("2d");
+
+  return measureContext;
+}
+
+function formatCanvasFontFamily(fontFamily: string) {
+  return fontFamily
+    .split(",")
+    .map((family) => family.trim())
+    .filter(Boolean)
+    .map((family) => {
+      const isQuoted = /^(['"]).*\1$/u.test(family);
+      const canBeUnquoted = /^-?[_a-zA-Z][-_a-zA-Z0-9]*$/u.test(family);
+
+      if (isQuoted || canBeUnquoted) {
+        return family;
+      }
+
+      return `"${family.replace(/"/g, '\\"')}"`;
+    })
+    .join(", ");
+}
+
+function fallbackTextWidth(text: string, fontSize: number) {
+  return Array.from(text).reduce((total, character) => {
+    if (/[MW@#%&]/u.test(character)) {
+      return total + fontSize * 0.8;
+    }
+
+    if (/[ilI!|.,']/u.test(character)) {
+      return total + fontSize * 0.34;
+    }
+
+    return total + fontSize * 0.64;
+  }, 0);
+}
+
+function measureTextWidth(
+  text: string,
+  layout: NormalizedWordCaptionLayout,
+) {
+  const context = getMeasureContext();
+
+  if (!context) {
+    return fallbackTextWidth(text, layout.fontSize);
+  }
+
+  context.font = `${CAPTION_FONT_WEIGHT} ${layout.fontSize}px ${formatCanvasFontFamily(
+    layout.fontFamily,
+  )}`;
+
+  return context.measureText(text).width;
+}
+
+function wordOuterWidth(
+  word: WordCaptionToken,
+  layout: NormalizedWordCaptionLayout,
+) {
+  return (
+    measureTextWidth(word.text.toUpperCase(), layout) +
+    layout.fontSize * (WORD_PADDING_X_EM * 2 + WORD_MARGIN_X_EM * 2)
+  );
+}
+
+function lineWidth(
+  line: WordCaptionToken[],
+  layout: NormalizedWordCaptionLayout,
+) {
+  return line.reduce((total, word) => total + wordOuterWidth(word, layout), 0);
+}
+
+function widestLineWidth(
+  lines: WordCaptionToken[][],
+  layout: NormalizedWordCaptionLayout,
+) {
+  return lines.reduce(
+    (widest, line) => Math.max(widest, lineWidth(line, layout)),
+    0,
+  );
+}
+
+function fitFontSizeForLines(
+  lines: WordCaptionToken[][],
+  layout: NormalizedWordCaptionLayout,
+) {
+  if (lines.length === 0) {
+    return layout.fontSize;
+  }
+
+  if (widestLineWidth(lines, layout) <= layout.maxContentWidth) {
+    return layout.fontSize;
+  }
+
+  let low = 1;
+  let high = layout.fontSize;
+
+  for (let index = 0; index < 12; index += 1) {
+    const candidateFontSize = (low + high) / 2;
+    const candidateLayout = {
+      ...layout,
+      fontSize: candidateFontSize,
+    };
+
+    if (widestLineWidth(lines, candidateLayout) <= layout.maxContentWidth) {
+      low = candidateFontSize;
+    } else {
+      high = candidateFontSize;
+    }
+  }
+
+  return Math.max(1, Math.min(layout.fontSize, Number(low.toFixed(3))));
 }
 
 function buildWords({
@@ -109,26 +286,6 @@ function buildWords({
   });
 }
 
-function currentLineLength(line: WordCaptionToken[]): number {
-  return line.reduce((total, word) => total + word.text.length, 0);
-}
-
-function shouldStartNewLine(
-  line: WordCaptionToken[],
-  nextWord: WordCaptionToken,
-): boolean {
-  if (line.length === 0) {
-    return false;
-  }
-
-  const nextLength = currentLineLength(line) + line.length + nextWord.text.length;
-
-  return (
-    line.length >= WORDS_PER_LINE ||
-    (line.length >= 3 && nextLength > MAX_LINE_CHARS)
-  );
-}
-
 function createPage(index: number, lines: WordCaptionToken[][]): WordCaptionPage {
   const words = lines.flat();
   const firstWord = words[0];
@@ -146,15 +303,22 @@ function createPage(index: number, lines: WordCaptionToken[][]): WordCaptionPage
 function paginateWords(
   words: WordCaptionToken[],
   maxLines = DEFAULT_MAX_LINES,
+  layoutOptions: WordCaptionLayoutOptions = {},
 ): WordCaptionPage[] {
   const normalizedMaxLines = Math.max(1, Math.floor(maxLines));
+  const layout = normalizeCaptionLayout(layoutOptions);
   const pages: WordCaptionPage[] = [];
   let lines: WordCaptionToken[][] = [[]];
+  let currentLineWidth = 0;
 
   for (const word of words) {
     let currentLine = lines[lines.length - 1];
+    const nextWordWidth = wordOuterWidth(word, layout);
 
-    if (shouldStartNewLine(currentLine, word)) {
+    if (
+      currentLine.length > 0 &&
+      currentLineWidth + nextWordWidth > layout.maxContentWidth
+    ) {
       if (lines.length >= normalizedMaxLines) {
         pages.push(createPage(pages.length, lines));
         lines = [[]];
@@ -163,9 +327,11 @@ function paginateWords(
       }
 
       currentLine = lines[lines.length - 1];
+      currentLineWidth = 0;
     }
 
     currentLine.push(word);
+    currentLineWidth += nextWordWidth;
   }
 
   const nonEmptyLines = lines.filter((line) => line.length > 0);
@@ -179,7 +345,10 @@ function paginateWords(
 
 export function buildWordCaptionTimeline({
   fps,
+  fontFamily = REMOTION_FONT_STACK,
+  fontSize = DEFAULT_CAPTION_FONT_SIZE,
   maxLines = DEFAULT_MAX_LINES,
+  maxContentWidth = DEFAULT_MAX_CONTENT_WIDTH,
   startFrame,
   text,
   wordsPerSecond = DEFAULT_WORDS_PER_SECOND,
@@ -192,7 +361,11 @@ export function buildWordCaptionTimeline({
   });
 
   return {
-    pages: paginateWords(words, maxLines),
+    pages: paginateWords(words, maxLines, {
+      fontFamily,
+      fontSize,
+      maxContentWidth,
+    }),
     words,
   };
 }
@@ -202,32 +375,79 @@ export const deriveWordCaptionTimings = buildWordCaptionTimeline;
 export function WordCaptions({
   color = "#ffffff",
   fontFamily = REMOTION_FONT_STACK,
-  fontSize = 68,
+  fontSize: requestedFontSize = DEFAULT_CAPTION_FONT_SIZE,
   highlightColor = "#facc15",
   highlightMode = "background",
+  holdLastPageUntilFrame,
+  maxContentWidth,
   maxLines = DEFAULT_MAX_LINES,
+  scrimStyle,
+  showScrim = false,
   startFrame,
   style,
   text,
+  textShadow = DEFAULT_TEXT_SHADOW,
   wordsPerSecond = DEFAULT_WORDS_PER_SECOND,
 }: WordCaptionsProps) {
   useRemotionFonts();
 
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, width } = useVideoConfig();
+  const layout = useMemo(
+    () =>
+      normalizeCaptionLayout({
+        fontFamily,
+        fontSize: requestedFontSize,
+        maxContentWidth: normalizePositiveNumber(
+          maxContentWidth,
+          Math.max(1, width - DEFAULT_HORIZONTAL_PADDING * 2),
+        ),
+      }),
+    [fontFamily, maxContentWidth, requestedFontSize, width],
+  );
   const timeline = useMemo(
     () =>
       buildWordCaptionTimeline({
         fps,
+        fontFamily: layout.fontFamily,
+        fontSize: layout.fontSize,
         maxLines,
+        maxContentWidth: layout.maxContentWidth,
         startFrame,
         text,
         wordsPerSecond,
       }),
-    [fps, maxLines, startFrame, text, wordsPerSecond],
+    [
+      fps,
+      layout.fontFamily,
+      layout.fontSize,
+      layout.maxContentWidth,
+      maxLines,
+      startFrame,
+      text,
+      wordsPerSecond,
+    ],
   );
-  const page = timeline.pages.find(
+  const activePage = timeline.pages.find(
     (candidate) => frame >= candidate.startFrame && frame < candidate.endFrame,
+  );
+  const lastPage = timeline.pages[timeline.pages.length - 1];
+  const normalizedHoldFrame =
+    typeof holdLastPageUntilFrame === "number" &&
+    Number.isFinite(holdLastPageUntilFrame)
+      ? holdLastPageUntilFrame
+      : null;
+  const page =
+    activePage ??
+    (lastPage &&
+    normalizedHoldFrame !== null &&
+    frame >= lastPage.endFrame &&
+    frame <= normalizedHoldFrame
+      ? lastPage
+      : null);
+  const fittedFontSize = useMemo(
+    () => (page ? fitFontSizeForLines(page.lines, layout) : layout.fontSize),
+    [layout, page],
   );
 
   if (!page) {
@@ -246,17 +466,29 @@ export function WordCaptions({
       <div
         style={{
           alignItems: "center",
+          boxSizing: "border-box",
           display: "flex",
           flexDirection: "column",
-          fontFamily,
-          fontSize,
-          fontWeight: 900,
-          gap: Math.max(10, fontSize * 0.12),
+          fontFamily: layout.fontFamily,
+          fontSize: fittedFontSize,
+          fontWeight: CAPTION_FONT_WEIGHT,
+          gap: Math.max(10, fittedFontSize * 0.12),
           lineHeight: 1,
+          maxWidth: layout.maxContentWidth,
+          position: "relative",
           textAlign: "center",
           textTransform: "uppercase",
+          width: "100%",
         }}
       >
+        {showScrim ? (
+          <div
+            style={{
+              ...DEFAULT_SCRIM_STYLE,
+              ...scrimStyle,
+            }}
+          />
+        ) : null}
         {page.lines.map((line, lineIndex) => (
           <div
             key={`${page.index}-${lineIndex}`}
@@ -264,7 +496,10 @@ export function WordCaptions({
               display: "flex",
               flexWrap: "nowrap",
               justifyContent: "center",
-              minHeight: fontSize * 1.08,
+              maxWidth: "100%",
+              minHeight: fittedFontSize * 1.08,
+              position: "relative",
+              width: "100%",
             }}
           >
             {line.map((word) => {
@@ -309,13 +544,13 @@ export function WordCaptions({
                           ? "#111827"
                           : color,
                     display: "inline-block",
-                    margin: "0 4px",
+                    margin: `0 ${WORD_MARGIN_X_EM}em`,
                     opacity,
-                    padding: "0.05em 0.18em 0.08em",
+                    padding: `0.05em ${WORD_PADDING_X_EM}em 0.08em`,
                     textShadow:
                       isActive && highlightMode === "background"
                         ? "none"
-                        : "0 3px 0 rgba(0,0,0,0.65), 0 8px 22px rgba(0,0,0,0.48)",
+                        : textShadow,
                     transform: `scale(${scale})`,
                     transformOrigin: "center bottom",
                   }}

@@ -8,6 +8,7 @@ import {
   Easing,
   Img,
   interpolate,
+  Sequence,
   spring,
   useCurrentFrame,
   useVideoConfig,
@@ -34,6 +35,10 @@ import { parseCompositionProps } from "./props";
 
 const FALLBACK_BPM = 120;
 const HOOK_WORDS_PER_SECOND = 6.6;
+const HOOK_FADE_IN_FRAMES = 5;
+const HOOK_HOLD_UNTIL_FRAME = 60;
+const HOOK_FADE_OUT_FRAMES = 12;
+const HOOK_END_FRAME = HOOK_HOLD_UNTIL_FRAME + HOOK_FADE_OUT_FRAMES;
 const SAFE_LEFT = 54;
 const TRANSITION_MIN_FRAMES = 8;
 const TRANSITION_MAX_FRAMES = 12;
@@ -490,10 +495,9 @@ function HookOverlay({
   theme: RemotionTheme;
 }) {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
   const hookOpacity = interpolate(
     frame,
-    [0, 10, 3.25 * fps, 3.7 * fps],
+    [0, HOOK_FADE_IN_FRAMES, HOOK_HOLD_UNTIL_FRAME, HOOK_END_FRAME],
     [0, 1, 1, 0],
     {
       extrapolateLeft: "clamp",
@@ -561,8 +565,10 @@ function HookOverlay({
             color={theme.foreground}
             fontFamily={ARCHIVO_BLACK_FONT_FAMILY}
             fontSize={hookFontSize(props.title)}
+            holdLastPageUntilFrame={HOOK_END_FRAME}
             highlightColor={theme.accent}
             maxLines={2}
+            showScrim
             startFrame={0}
             text={props.title}
             wordsPerSecond={HOOK_WORDS_PER_SECOND}
@@ -586,15 +592,19 @@ export function Slideshow(inputProps: RemotionProps) {
   const theme = themeOrDefault(props.theme);
   const frame = useCurrentFrame();
   const { durationInFrames, fps } = useVideoConfig();
+  const slideDurationInFrames = Math.max(
+    1,
+    durationInFrames - HOOK_HOLD_UNTIL_FRAME,
+  );
   const { timings, transitionDuration } = useMemo(
     () =>
       buildSlideTimings({
-        durationInFrames,
+        durationInFrames: slideDurationInFrames,
         fps,
         musicSrc: props.music?.src,
         slideCount: slideshow.slides.length,
       }),
-    [durationInFrames, fps, props.music?.src, slideshow.slides.length],
+    [fps, props.music?.src, slideDurationInFrames, slideshow.slides.length],
   );
   const transitionTiming = useMemo(
     () =>
@@ -604,7 +614,8 @@ export function Slideshow(inputProps: RemotionProps) {
       }),
     [transitionDuration],
   );
-  const activeIndex = getActiveSlideIndex(timings, frame);
+  const slideFrame = Math.max(0, frame - HOOK_HOLD_UNTIL_FRAME);
+  const activeIndex = getActiveSlideIndex(timings, slideFrame);
 
   return (
     <AbsoluteFill
@@ -622,29 +633,35 @@ export function Slideshow(inputProps: RemotionProps) {
         volume={props.music?.volume ?? 0.08}
       />
 
-      <TransitionSeries>
-        {slideshow.slides.map((currentSlide, index) => (
-          <Fragment key={`${currentSlide.caption}-${index}`}>
-            {index > 0 ? (
-              <TransitionSeries.Transition
-                presentation={transitionPresentation(index)}
-                timing={transitionTiming}
-              />
-            ) : null}
-            <TransitionSeries.Sequence
-              durationInFrames={timings[index].sequenceDuration}
-              premountFor={fps}
-            >
-              <SlideScene
-                index={index}
-                slide={currentSlide}
-                theme={theme}
-                timing={timings[index]}
-              />
-            </TransitionSeries.Sequence>
-          </Fragment>
-        ))}
-      </TransitionSeries>
+      <Sequence
+        durationInFrames={slideDurationInFrames}
+        from={HOOK_HOLD_UNTIL_FRAME}
+        premountFor={fps}
+      >
+        <TransitionSeries>
+          {slideshow.slides.map((currentSlide, index) => (
+            <Fragment key={`${currentSlide.caption}-${index}`}>
+              {index > 0 ? (
+                <TransitionSeries.Transition
+                  presentation={transitionPresentation(index)}
+                  timing={transitionTiming}
+                />
+              ) : null}
+              <TransitionSeries.Sequence
+                durationInFrames={timings[index].sequenceDuration}
+                premountFor={fps}
+              >
+                <SlideScene
+                  index={index}
+                  slide={currentSlide}
+                  theme={theme}
+                  timing={timings[index]}
+                />
+              </TransitionSeries.Sequence>
+            </Fragment>
+          ))}
+        </TransitionSeries>
+      </Sequence>
 
       <GrainOverlay opacity={0.045} size={210} />
       <HookOverlay kicker={slideshow.kicker} props={props} theme={theme} />
@@ -659,7 +676,7 @@ export function Slideshow(inputProps: RemotionProps) {
         <HashtagRow hashtags={props.hashtags} theme={theme} />
         <ProgressSegments
           activeIndex={activeIndex}
-          frame={frame}
+          frame={slideFrame}
           theme={theme}
           timings={timings}
         />
