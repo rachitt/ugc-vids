@@ -1,7 +1,16 @@
+import { Readable } from "node:stream";
+
 import { eq } from "drizzle-orm";
 
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { calendarSlots, contentItems } from "@/lib/db/schema";
+import {
+  createVideoStorageFromEnv,
+  VideoStorageInvalidKeyError,
+  VideoStorageNotFoundError,
+} from "@/lib/storage/video-storage";
+import { isUserWorkspaceMember } from "@/lib/workspaces";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,6 +22,14 @@ type RouteContext = {
 };
 
 export async function GET(request: Request, context: RouteContext) {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  if (!session?.user?.id) {
+    return new Response("Unauthorized.", { status: 401 });
+  }
+
   const { slotId } = await context.params;
   const [row] = await db
     .select({
@@ -28,11 +45,32 @@ export async function GET(request: Request, context: RouteContext) {
     return new Response("Video not found.", { status: 404 });
   }
 
+  const isMember = await isUserWorkspaceMember({
+    userId: session.user.id,
+    workspaceId: row.item.workspaceId,
+  });
+
+  if (!isMember) {
+    return new Response("Forbidden.", { status: 403 });
+  }
+
   const fileName = `fastlane-${row.slot.platform}-${row.item.id.slice(0, 8)}.mp4`;
   const dataUrlResponse = responseFromDataUrl(row.item.videoUrl, fileName);
 
   if (dataUrlResponse) {
     return dataUrlResponse;
+  }
+
+  const storageKey = storageKeyFromApiVideoUrl(row.item.videoUrl);
+
+  if (storageKey) {
+    const storageWorkspaceId = workspaceIdFromStorageKey(storageKey);
+
+    if (storageWorkspaceId !== row.item.workspaceId) {
+      return new Response("Forbidden.", { status: 403 });
+    }
+
+    return responseFromStorage(storageKey, fileName);
   }
 
   let sourceUrl: URL;
@@ -70,6 +108,73 @@ export async function GET(request: Request, context: RouteContext) {
   }
 }
 
+async function responseFromStorage(key: string, fileName: string) {
+  const storage = createVideoStorageFromEnv();
+
+  try {
+    const video = await storage.getStream(key);
+
+    return new Response(readableToResponseBody(video.stream), {
+      headers: {
+        "Accept-Ranges": "bytes",
+        "Content-Disposition": attachmentHeader(fileName),
+        "Content-Length": String(video.contentLength),
+        "Content-Type": "video/mp4",
+      },
+      status: 200,
+    });
+  } catch (error) {
+    if (
+      error instanceof VideoStorageNotFoundError ||
+      error instanceof VideoStorageInvalidKeyError
+    ) {
+      return new Response("Video not found.", { status: 404 });
+    }
+
+    throw error;
+  }
+}
+
+function storageKeyFromApiVideoUrl(videoUrl: string) {
+  const prefix = "/api/videos/";
+
+  if (!videoUrl.startsWith(prefix)) {
+    return null;
+  }
+
+  try {
+    const url = new URL(videoUrl, "http://fastlane.local");
+
+    if (!url.pathname.startsWith(prefix)) {
+      return null;
+    }
+
+    return url.pathname
+      .slice(prefix.length)
+      .split("/")
+      .filter(Boolean)
+      .map((segment) => decodeURIComponent(segment))
+      .join("/");
+  } catch {
+    return null;
+  }
+}
+
+function workspaceIdFromStorageKey(key: string) {
+  const segments = key.split("/");
+
+  if (
+    segments.length < 4 ||
+    segments[0] !== "renders" ||
+    segments[1].length === 0 ||
+    segments[2].length === 0
+  ) {
+    return null;
+  }
+
+  return segments[1];
+}
+
 function responseFromDataUrl(dataUrl: string, fileName: string) {
   const match = /^data:([^;,]*)(;base64)?,([\s\S]*)$/.exec(dataUrl);
 
@@ -95,4 +200,8 @@ function responseFromDataUrl(dataUrl: string, fileName: string) {
 
 function attachmentHeader(fileName: string) {
   return `attachment; filename="${fileName.replace(/["\\]/g, "")}"`;
+}
+
+function readableToResponseBody(stream: Readable) {
+  return Readable.toWeb(stream) as unknown as BodyInit;
 }

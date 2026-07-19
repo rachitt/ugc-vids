@@ -18,6 +18,7 @@ export type RenderVideoResult = {
 };
 
 type RenderVideoJobData = RenderJobData & {
+  outputDir?: string;
   serveUrl?: string;
 };
 
@@ -49,11 +50,15 @@ export async function renderVideoJob(
 ): Promise<RenderVideoResult> {
   const job = normalizeRenderJobData(rawJobData);
   const serveUrl = await resolveServeUrl(job);
+  const outputDir =
+    typeof rawJobData.outputDir === "string" && rawJobData.outputDir.length > 0
+      ? path.resolve(projectRoot, rawJobData.outputDir)
+      : rendersDir;
 
-  await mkdir(rendersDir, { recursive: true });
+  await mkdir(outputDir, { recursive: true });
 
   const outputName = `${safePathSegment(job.contentItemId)}-${job.compositionId}-${Date.now()}.mp4`;
-  const outputLocation = path.join(rendersDir, outputName);
+  const outputLocation = path.join(outputDir, outputName);
   const composition = await selectComposition({
     id: job.compositionId,
     inputProps: job.props,
@@ -72,7 +77,9 @@ export async function renderVideoJob(
     serveUrl,
   });
 
-  const key = `renders/${outputName}`;
+  const workspacePath = safePathSegment(job.workspaceId) || "unknown";
+  const contentItemPath = safePathSegment(job.contentItemId) || "unknown";
+  const key = `renders/${workspacePath}/${contentItemPath}/${Date.now()}.mp4`;
   const upload = await uploader.uploadRenderedVideo({
     contentType: "video/mp4",
     key,

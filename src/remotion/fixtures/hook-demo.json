@@ -15,6 +15,10 @@
     "secondary": "#f97316",
     "muted": "#bfdbfe"
   },
+  "music": {
+    "src": "asset:music/epic-01",
+    "volume": 0.06
+  },
   "hookDemo": {
     "hook": "Still guessing which content brings qualified leads?",
     "subhook": "Here is the three-screen workflow that fixes it.",
@@ -22,7 +26,7 @@
     "shots": [
       {
         "image": {
-          "src": "placeholder:product",
+          "src": "asset:broll/broll-23",
           "label": "Lead source"
         },
         "label": "Step 1",
@@ -30,7 +34,7 @@
       },
       {
         "image": {
-          "src": "placeholder:graph",
+          "src": "asset:broll/clip-03",
           "label": "Performance lift"
         },
         "label": "Step 2",
@@ -38,7 +42,7 @@
       },
       {
         "image": {
-          "src": "placeholder:checkout",
+          "src": "asset:broll/broll-24",
           "label": "Export queue"
         },
         "label": "Step 3",

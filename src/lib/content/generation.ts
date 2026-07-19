@@ -1,4 +1,13 @@
 import { runClaudeAgentTask } from "../ai/agent";
+import {
+  fnv1a,
+  manifest,
+  pickAsset,
+  type BrollAsset,
+  type GradientAsset,
+  type ManifestAsset,
+  type MusicAsset,
+} from "../assets/manifest";
 import { db } from "../db";
 import { brandProfiles, contentItems } from "../db/schema";
 import type { PromptRecipe } from "../trends/metadata";
@@ -117,16 +126,16 @@ const FORMAT_RECIPES: Record<RenderableContentFormat, string[]> = {
   ],
 };
 
-const PLACEHOLDER_ASSETS = [
-  "dashboard",
-  "analytics",
-  "workflow",
-  "social",
-  "product",
-  "demo",
-  "graph",
-  "checkout",
-] as const;
+const MUSIC_MOOD_BY_FORMAT: Record<RenderableContentFormat, MusicAsset["mood"]> = {
+  greenscreen_meme: "upbeat",
+  hook_demo: "epic",
+  slideshow: "upbeat",
+  wall_of_text: "chill",
+};
+
+const IMAGE_BROLL_ASSETS = manifest.broll.filter(
+  (asset): asset is BrollAsset & { kind: "image" } => asset.kind === "image",
+);
 
 export async function generateContentItems({
   brandProfile,
@@ -511,7 +520,7 @@ function mapScriptToRemotionProps(
     format,
     hashtags: normalizeHashtags(script.hashtags, brandProfile.nicheTags),
     music: {
-      src: "silent:placeholder",
+      src: musicAssetUri(brandProfile, format, itemIndex),
       volume: 0.06,
     },
     theme,
@@ -525,13 +534,25 @@ function mapScriptToRemotionProps(
         greenscreenMeme: {
           background: {
             label: "Meme setup",
-            src: "placeholder:meme",
+            src: assetUri(
+              pickAsset(
+                manifest.memeBackgrounds,
+                assetSeed(brandProfile.id, format, itemIndex, 1),
+              ),
+              "placeholder:meme",
+            ),
           },
           caption: trimText(script.memeCaption ?? script.hook, 72),
           captionBar: theme.background,
           persona: {
             label: brand.name,
-            src: "placeholder:persona",
+            src: assetUri(
+              pickAsset(
+                manifest.personas,
+                assetSeed(brandProfile.id, format, itemIndex, 2),
+              ),
+              "placeholder:persona",
+            ),
           },
           reactionLabel: trimText(script.reactionLabel ?? "Relatable", 42),
         },
@@ -547,7 +568,10 @@ function mapScriptToRemotionProps(
             caption: trimText(step.caption, 74),
             image: {
               label: step.label ?? `Step ${index + 1}`,
-              src: placeholderAssetForIndex(itemIndex + index),
+              src: assetUri(
+                pickVisualAsset(brandProfile.id, format, itemIndex, index + 1),
+                "placeholder:product",
+              ),
             },
             label: trimText(step.label ?? `Step ${index + 1}`, 28),
           })),
@@ -567,7 +591,10 @@ function mapScriptToRemotionProps(
             eyebrow: `Slide ${index + 1}`,
             image: {
               label: `Scene ${index + 1}`,
-              src: placeholderAssetForIndex(itemIndex + index),
+              src: assetUri(
+                pickVisualAsset(brandProfile.id, format, itemIndex, index + 1),
+                "placeholder:dashboard",
+              ),
             },
           })),
         },
@@ -584,7 +611,10 @@ function mapScriptToRemotionProps(
           broll: [
             {
               label: firstNicheTag(brandProfile) ?? "Customer proof",
-              src: "placeholder:social",
+              src: assetUri(
+                pickWallOfTextBackground(brandProfile.id, format, itemIndex),
+                "placeholder:social",
+              ),
             },
           ],
           headline: trimText(script.hook, 82),
@@ -785,8 +815,76 @@ function getStringArray(value: unknown, maxItems: number) {
   return items.slice(0, maxItems);
 }
 
-function placeholderAssetForIndex(index: number) {
-  return `placeholder:${PLACEHOLDER_ASSETS[index % PLACEHOLDER_ASSETS.length]}`;
+function assetSeed(
+  brandProfileId: BrandProfileRow["id"],
+  format: RenderableContentFormat,
+  itemIndex: number,
+  slotIndex: number,
+) {
+  return `${brandProfileId}:${format}:${itemIndex}:${slotIndex}`;
+}
+
+function assetUri(asset: ManifestAsset | undefined, fallbackSrc: string) {
+  return asset ? `asset:${asset.id}` : fallbackSrc;
+}
+
+function musicAssetUri(
+  brandProfile: BrandProfileRow,
+  format: RenderableContentFormat,
+  itemIndex: number,
+) {
+  const mood = MUSIC_MOOD_BY_FORMAT[format];
+  const pool = manifest.music.filter((asset) => asset.mood === mood);
+
+  return assetUri(
+    pickAsset(pool, assetSeed(brandProfile.id, format, itemIndex, 0)),
+    "silent:placeholder",
+  );
+}
+
+function pickVisualAsset(
+  brandProfileId: BrandProfileRow["id"],
+  format: RenderableContentFormat,
+  itemIndex: number,
+  slotIndex: number,
+) {
+  const selected = pickAsset(
+    IMAGE_BROLL_ASSETS,
+    assetSeed(brandProfileId, format, itemIndex, slotIndex),
+  );
+
+  if (!selected || IMAGE_BROLL_ASSETS.length < 2 || slotIndex <= 1) {
+    return selected;
+  }
+
+  const previous = pickVisualAsset(
+    brandProfileId,
+    format,
+    itemIndex,
+    slotIndex - 1,
+  );
+
+  if (!previous || previous.id !== selected.id) {
+    return selected;
+  }
+
+  const selectedIndex = IMAGE_BROLL_ASSETS.findIndex(
+    (asset) => asset.id === selected.id,
+  );
+
+  return IMAGE_BROLL_ASSETS[(selectedIndex + 1) % IMAGE_BROLL_ASSETS.length];
+}
+
+function pickWallOfTextBackground(
+  brandProfileId: BrandProfileRow["id"],
+  format: RenderableContentFormat,
+  itemIndex: number,
+): BrollAsset | GradientAsset | undefined {
+  const seed = assetSeed(brandProfileId, format, itemIndex, 1);
+  const pool: readonly (BrollAsset | GradientAsset)[] =
+    fnv1a(seed) % 2 === 0 ? manifest.gradients : IMAGE_BROLL_ASSETS;
+
+  return pickAsset(pool, seed);
 }
 
 function firstNicheTag(brandProfile: BrandProfileRow) {

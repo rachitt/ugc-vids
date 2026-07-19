@@ -15,14 +15,20 @@
     "secondary": "#0ea5e9",
     "muted": "#cbd5e1"
   },
+  "music": {
+    "src": "asset:music/chill-01",
+    "volume": 0.06
+  },
   "wallOfText": {
     "headline": "Your best sales page is probably hiding in your support inbox.",
-    "body": "Start with the objection customers repeat most.\nShow the before-state in plain language.\nThen show the product moment that makes the problem disappear.\nThat becomes a save-worthy short instead of another generic ad.",
-    "sourceLabel": "UGC angle",
+    "body": "Start with the objection customers repeat most.\nQuote it in the customer's words.\nName the painful before-state.\nShow the product moment that removes it.\nAdd one proof point.\nEnd with the next tiny action.\nNow it feels like a note worth saving.\nNot another generic ad.",
+    "sourceLabel": "Creator note",
+    "timestampLabel": "2h",
+    "footerCue": "save this 🔖",
     "broll": [
       {
-        "src": "placeholder:social",
-        "label": "Customer proof"
+        "src": "asset:broll/broll-22",
+        "label": "Support inbox workspace"
       }
     ]
   }

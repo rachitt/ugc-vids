@@ -9,6 +9,10 @@ import type {
 import { getContentFormatLabel } from "@/lib/content/formats";
 import { db } from "@/lib/db";
 import { calendarSlots, contentItems, workspaces } from "@/lib/db/schema";
+import {
+  getDefaultWorkspaceName,
+  hasDefaultWorkspaceNameOverride,
+} from "@/lib/workspaces";
 
 export const dynamic = "force-dynamic";
 
@@ -36,14 +40,23 @@ export default async function CalendarPage() {
 
 async function getCalendarData(): Promise<CalendarData> {
   try {
-    const [workspace] = await db
-      .select({
-        id: workspaces.id,
-        name: workspaces.name,
-      })
-      .from(workspaces)
-      .orderBy(desc(workspaces.createdAt))
-      .limit(1);
+    const [workspace] = hasDefaultWorkspaceNameOverride()
+      ? await db
+          .select({
+            id: workspaces.id,
+            name: workspaces.name,
+          })
+          .from(workspaces)
+          .where(eq(workspaces.name, getDefaultWorkspaceName()))
+          .limit(1)
+      : await db
+          .select({
+            id: workspaces.id,
+            name: workspaces.name,
+          })
+          .from(workspaces)
+          .orderBy(desc(workspaces.createdAt))
+          .limit(1);
 
     if (!workspace) {
       return {

@@ -59,6 +59,11 @@ export async function scrapeBrandWebsite(
   rawUrl: string,
 ): Promise<BrandWebsiteScrape> {
   const rootUrl = normalizeWebsiteUrl(rawUrl);
+
+  if (process.env.FASTLANE_FAKE_SCRAPE === "1") {
+    return buildFakeBrandWebsiteScrape(rootUrl);
+  }
+
   const homeFetch = await fetchHtml(rootUrl, true);
 
   if (!homeFetch) {
@@ -90,6 +95,63 @@ export async function scrapeBrandWebsite(
     summary: buildScrapedSummary(pages),
     logoUrl: extractLogoUrl(homeFetch.html, homeFetch.url),
     colors: extractColors(homeFetch.html),
+  };
+}
+
+function buildFakeBrandWebsiteScrape(rootUrl: string): BrandWebsiteScrape {
+  const base = new URL(rootUrl);
+  const pricingUrl = new URL("/pricing", base.origin).toString();
+  const aboutUrl = new URL("/about", base.origin).toString();
+  const pages: ScrapedBrandPage[] = [
+    {
+      label: "home",
+      url: rootUrl,
+      title: "Fastlane Creative OS",
+      description:
+        "Turn website proof into short-form UGC scripts, saved winners, rendered videos, and scheduled posts.",
+      text: [
+        "Fastlane Creative OS helps lean marketing teams convert existing website messaging into practical UGC creative.",
+        "Paste a URL, generate a brand profile, review short-form concepts in Blitz, and save the winners for rendering.",
+        "The product keeps scripts, captions, hashtags, renders, and publishing slots in one workflow.",
+      ].join("\n"),
+      status: 200,
+    },
+    {
+      label: "pricing",
+      url: pricingUrl,
+      title: "Simple plans for creative teams",
+      description:
+        "Plans are built around saved content capacity, rendering workflows, and team review volume.",
+      text: [
+        "Starter teams need quick script generation, review, and local export for campaigns.",
+        "Growth teams need more saved ideas, faster approval, and a calendar for platform-specific posting.",
+      ].join("\n"),
+      status: 200,
+    },
+    {
+      label: "about",
+      url: aboutUrl,
+      title: "Built for creative velocity",
+      description:
+        "Fastlane is built for operators who want specific, proof-led content instead of generic AI output.",
+      text: [
+        "The team believes great short-form content starts with real product proof and customer language.",
+        "Fastlane connects intake, generation, review, rendering, scheduling, and export so the loop stays visible.",
+      ].join("\n"),
+      status: 200,
+    },
+  ];
+
+  return {
+    rootUrl,
+    pages,
+    summary: buildScrapedSummary(pages),
+    logoUrl: null,
+    colors: {
+      accent: "#2563eb",
+      foreground: "#111827",
+      secondary: "#10b981",
+    },
   };
 }
 

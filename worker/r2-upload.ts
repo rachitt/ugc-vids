@@ -1,13 +1,11 @@
-export type RenderedVideoUpload = {
-  contentType: "video/mp4";
-  key: string;
-  localPath: string;
-};
+import {
+  createVideoStorageFromEnv,
+  type RenderedVideoStorage,
+  type RenderedVideoUpload,
+  type RenderedVideoUploadResult,
+} from "../src/lib/storage/video-storage";
 
-export type RenderedVideoUploadResult = {
-  key: string;
-  url: string;
-};
+export type { RenderedVideoUpload, RenderedVideoUploadResult };
 
 export interface RenderedVideoUploader {
   uploadRenderedVideo(
@@ -15,19 +13,14 @@ export interface RenderedVideoUploader {
   ): Promise<RenderedVideoUploadResult>;
 }
 
-export class StubR2RenderedVideoUploader implements RenderedVideoUploader {
+export class RenderedVideoStorageUploader implements RenderedVideoUploader {
+  constructor(
+    private readonly storage: RenderedVideoStorage = createVideoStorageFromEnv(),
+  ) {}
+
   async uploadRenderedVideo(
     upload: RenderedVideoUpload,
   ): Promise<RenderedVideoUploadResult> {
-    console.info("R2 upload stub skipped network I/O", {
-      contentType: upload.contentType,
-      key: upload.key,
-      localPath: upload.localPath,
-    });
-
-    return {
-      key: upload.key,
-      url: `r2://stub/${upload.key}`,
-    };
+    return this.storage.put(upload);
   }
 }

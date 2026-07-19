@@ -1,4 +1,4 @@
-import { z } from "../../../node_modules/.pnpm/zod@4.4.3/node_modules/zod/index.js";
+import { z } from "zod";
 import {
   renderableContentFormats,
   type RenderableContentFormat,
@@ -61,6 +61,8 @@ const WallOfTextSchema = z.object({
   headline: z.string().min(1),
   body: z.string().min(1),
   sourceLabel: z.string().optional(),
+  timestampLabel: z.string().optional(),
+  footerCue: z.string().optional(),
   broll: z.array(AssetSchema).min(1).max(4).default([]),
 });
 

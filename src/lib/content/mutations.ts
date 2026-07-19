@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { contentItems, subscriptions } from "@/lib/db/schema";
 
 import {
-  placeholderGenerationRequester,
+  batchGenerationRequester,
   type GenerationRequestResult,
 } from "./generation-contract";
 import { countGeneratedContentItems, getPlanSaveCap } from "./queries";
@@ -171,9 +171,10 @@ export async function requestMoreGeneratedContent(
 ): Promise<GenerationRequestResult> {
   const currentGeneratedCount = await countGeneratedContentItems(workspaceId);
 
-  return placeholderGenerationRequester.requestGeneration({
+  return batchGenerationRequester.requestGeneration({
     workspaceId,
     reason: "deck_low",
+    source: "blitz_deck",
     targetCount: Math.max(12, 20 - currentGeneratedCount),
   });
 }
