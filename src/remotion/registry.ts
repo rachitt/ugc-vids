@@ -15,8 +15,9 @@ import {
 } from "../lib/video/remotion-props";
 import { GreenscreenMeme } from "./GreenscreenMeme";
 import { HookDemo } from "./HookDemo";
+import { PrimitivesDemo, type PrimitivesDemoProps } from "./PrimitivesDemo";
 import { Slideshow } from "./Slideshow";
-import { remotionFixtures } from "./fixtures";
+import { primitivesDemoFixture, remotionFixtures } from "./fixtures";
 import { WallOfText } from "./WallOfText";
 
 const defaultPropsByFormat = Object.fromEntries(
@@ -47,6 +48,15 @@ export type RemotionCompositionDefinition = {
   calculateMetadata: CalculateMetadataFunction<RemotionProps>;
 };
 
+export type PrimitivesDemoCompositionDefinition = {
+  id: "primitives-demo";
+  label: string;
+  component: ComponentType<PrimitivesDemoProps>;
+  defaultProps: PrimitivesDemoProps;
+  durationInFrames: number;
+  userFacing: false;
+};
+
 function defineComposition(
   format: RenderableContentFormat,
   label: string,
@@ -72,6 +82,15 @@ export const remotionCompositions: RemotionCompositionDefinition[] = [
   defineComposition("greenscreen_meme", "Greenscreen meme", GreenscreenMeme),
   defineComposition("hook_demo", "Hook demo", HookDemo),
 ];
+
+export const primitivesDemoComposition: PrimitivesDemoCompositionDefinition = {
+  component: PrimitivesDemo,
+  defaultProps: primitivesDemoFixture.props,
+  durationInFrames: primitivesDemoFixture.props.durationInFrames,
+  id: "primitives-demo",
+  label: primitivesDemoFixture.label,
+  userFacing: false,
+};
 
 export function getCompositionByFormat(
   format: RenderableContentFormat,
