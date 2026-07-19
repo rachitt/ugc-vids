@@ -9,9 +9,58 @@ import {
 } from "remotion";
 
 import type { RemotionProps } from "../lib/video/remotion-props";
+import { getMusicBeatMetadata, snapToBeat } from "./beats";
+import { BOTTOM_SAFE, RIGHT_SAFE, TOP_SAFE } from "./layout";
 import { resolveAudioSrc, resolveMediaSrc, themeOrDefault } from "./media";
-import { BrandBug, remotionFontFamily } from "./primitives";
+import {
+  GrainOverlay,
+  MemeText,
+  remotionFontFamily,
+  StickerChip,
+} from "./primitives";
 import { parseCompositionProps } from "./props";
+
+const CAPTION_BAR_HEIGHT = 236;
+const CAPTION_BAR_BOTTOM = BOTTOM_SAFE + 24;
+const PERSONA_WIDTH = 860;
+const PERSONA_HEIGHT = 1120;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function toTwoLineMemeText(text: string): string {
+  const normalized = text.trim().replace(/\s+/g, " ");
+  const words = normalized.split(" ");
+
+  if (words.length <= 1 || normalized.length <= 22) {
+    return normalized;
+  }
+
+  let bestSplit = 1;
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  for (let index = 1; index < words.length; index += 1) {
+    const firstLine = words.slice(0, index).join(" ");
+    const secondLine = words.slice(index).join(" ");
+    const longestLine = Math.max(firstLine.length, secondLine.length);
+    const balance = Math.abs(firstLine.length - secondLine.length);
+    const score = longestLine * 2 + balance;
+
+    if (score < bestScore) {
+      bestScore = score;
+      bestSplit = index;
+    }
+  }
+
+  return `${words.slice(0, bestSplit).join(" ")}\n${words
+    .slice(bestSplit)
+    .join(" ")}`;
+}
+
+function captionFontSize(text: string): number {
+  return clamp(64 - Math.max(0, text.length - 34) * 0.62, 44, 64);
+}
 
 export function GreenscreenMeme(inputProps: RemotionProps) {
   const props = parseCompositionProps(inputProps, "greenscreen_meme");
@@ -23,27 +72,85 @@ export function GreenscreenMeme(inputProps: RemotionProps) {
 
   const theme = themeOrDefault(props.theme);
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { durationInFrames, fps } = useVideoConfig();
+  const musicBeats = getMusicBeatMetadata(props.music?.src);
+  const firstDownbeatFrame = musicBeats
+    ? Math.max(
+        0,
+        snapToBeat(
+          0,
+          musicBeats.bpm,
+          fps,
+          musicBeats.downbeatOffsetSec,
+          "ceil",
+        ),
+      )
+    : 0;
+  const stickerStartFrame = musicBeats
+    ? clamp(
+        snapToBeat(
+          durationInFrames * 0.52,
+          musicBeats.bpm,
+          fps,
+          musicBeats.downbeatOffsetSec,
+          "nearest",
+        ),
+        Math.round(durationInFrames * 0.34),
+        Math.max(Math.round(durationInFrames * 0.34), durationInFrames - 42),
+      )
+    : Math.round(durationInFrames * 0.52);
   const cutoutEntrance = spring({
     config: {
-      damping: 18,
-      stiffness: 130,
+      damping: 13,
+      stiffness: 210,
     },
     fps,
-    frame: frame - 12,
+    frame,
+    durationInFrames: 12,
   });
+  const idleBob = Math.sin(frame / 9) * 6;
+  const titlePop = spring({
+    config: {
+      damping: 12,
+      stiffness: 260,
+    },
+    fps,
+    frame: frame - firstDownbeatFrame,
+    durationInFrames: 11,
+  });
+  const titleOpacity = interpolate(
+    frame,
+    [firstDownbeatFrame, firstDownbeatFrame + 5],
+    [0, 1],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
   const captionPop = spring({
     config: {
-      damping: 16,
-      stiffness: 190,
+      damping: 17,
+      stiffness: 210,
     },
     fps,
-    frame: frame - 28,
+    frame: frame - 18,
+    durationInFrames: 14,
   });
-  const backgroundScale = interpolate(frame, [0, 300], [1.06, 1.01], {
+  const captionOpacity = interpolate(frame, [16, 24], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  const backgroundScale = interpolate(
+    frame,
+    [0, Math.max(1, durationInFrames - 1)],
+    [1, 1.08],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
+  const topText = toTwoLineMemeText(props.title);
+  const bandColor = meme.captionBar ?? theme.background ?? "#050505";
 
   return (
     <AbsoluteFill
@@ -72,121 +179,144 @@ export function GreenscreenMeme(inputProps: RemotionProps) {
       <div
         style={{
           background:
-            "linear-gradient(180deg, rgba(0,0,0,0.48) 0%, transparent 26%, transparent 62%, rgba(0,0,0,0.72) 100%)",
+            "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 28%, rgba(0,0,0,0.18) 58%, rgba(0,0,0,0.7) 100%)",
           inset: 0,
           position: "absolute",
+          zIndex: 1,
         }}
       />
 
-      <BrandBug props={props} />
-
       <div
         style={{
-          background: "rgba(255,255,255,0.92)",
-          border: "6px solid #111827",
-          borderRadius: 30,
-          left: 72,
-          padding: "28px 34px",
+          left: 56,
+          opacity: titleOpacity,
           position: "absolute",
-          right: 72,
-          top: 190,
+          right: RIGHT_SAFE + 56,
+          top: TOP_SAFE + 24,
+          transform: `translateY(${(1 - titlePop) * 22}px) scale(${
+            0.82 + titlePop * 0.18
+          })`,
+          transformOrigin: "center top",
+          zIndex: 6,
         }}
       >
-        <div
+        <MemeText
+          fontSize={112}
+          maxWidth={900}
+          strokeWidth={6}
           style={{
-            color: "#111827",
-            fontSize: 58,
-            fontWeight: 950,
-            lineHeight: 0.98,
-            textAlign: "center",
-            textTransform: "uppercase",
+            display: "-webkit-box",
+            overflow: "hidden",
+            WebkitBoxOrient: "vertical",
+            WebkitLineClamp: 2,
           }}
-        >
-          {props.title}
-        </div>
+          text={topText}
+        />
       </div>
 
       {meme.reactionLabel ? (
         <div
           style={{
-            background: theme.accent,
-            borderRadius: 999,
-            color: theme.background,
-            fontSize: 32,
-            fontWeight: 900,
             left: 90,
-            padding: "14px 26px",
             position: "absolute",
-            top: 470,
-            transform: "rotate(-3deg)",
+            top: 650,
+            zIndex: 7,
           }}
         >
-          {meme.reactionLabel}
+          <StickerChip
+            background={theme.accent}
+            color={theme.background}
+            rotationDeg={-5}
+            startFrame={stickerStartFrame}
+            style={{
+              fontSize: 32,
+              maxWidth: 640,
+              textAlign: "center",
+            }}
+          >
+            {meme.reactionLabel}
+          </StickerChip>
         </div>
       ) : null}
 
       <div
         style={{
-          bottom: 315,
-          height: 920,
-          left: 120,
+          bottom: BOTTOM_SAFE + CAPTION_BAR_HEIGHT - 76,
+          height: PERSONA_HEIGHT,
+          left: "50%",
           position: "absolute",
-          transform: `translateY(${(1 - cutoutEntrance) * 120}px) scale(${
-            0.9 + cutoutEntrance * 0.1
-          })`,
-          width: 840,
-        }}
-      >
-        <Img
-          src={resolveMediaSrc(meme.persona)}
-          style={{
-            filter: "drop-shadow(0 40px 54px rgba(0,0,0,0.45))",
-            height: "100%",
-            objectFit: "contain",
-            width: "100%",
-          }}
-        />
-      </div>
-
-      <div
-        style={{
-          background: meme.captionBar ?? "#111827",
-          borderTop: `8px solid ${theme.accent}`,
-          bottom: 0,
-          left: 0,
-          minHeight: 290,
-          padding: "44px 72px 64px",
-          position: "absolute",
-          right: 0,
-          transform: `translateY(${(1 - captionPop) * 120}px)`,
+          transform: `translateX(-50%) translateY(${
+            (1 - cutoutEntrance) * 260 + idleBob
+          }px) scale(${0.91 + cutoutEntrance * 0.09})`,
+          transformOrigin: "center bottom",
+          width: PERSONA_WIDTH,
+          zIndex: 4,
         }}
       >
         <div
           style={{
-            color: theme.foreground,
-            fontSize: 62,
-            fontWeight: 950,
-            lineHeight: 0.96,
+            height: "100%",
+            transform: `rotate(${Math.sin(frame / 31) * 0.8}deg)`,
+            transformOrigin: "center bottom",
+            width: "100%",
+          }}
+        >
+          <Img
+            src={resolveMediaSrc(meme.persona)}
+            style={{
+              filter:
+                "drop-shadow(0 44px 50px rgba(0,0,0,0.56)) drop-shadow(0 0 18px rgba(255,255,255,0.18))",
+              height: "100%",
+              objectFit: "contain",
+              objectPosition: "center bottom",
+              width: "100%",
+            }}
+          />
+        </div>
+      </div>
+
+      <div
+        style={{
+          background: bandColor,
+          bottom: CAPTION_BAR_BOTTOM,
+          boxShadow: "0 -20px 54px rgba(0,0,0,0.32)",
+          boxSizing: "border-box",
+          height: CAPTION_BAR_HEIGHT,
+          left: 0,
+          opacity: captionOpacity,
+          padding: `30px ${RIGHT_SAFE + 72}px 34px 72px`,
+          position: "absolute",
+          right: 0,
+          transform: `scaleY(${0.88 + captionPop * 0.12})`,
+          transformOrigin: "center bottom",
+          zIndex: 8,
+        }}
+      >
+        <div
+          style={{
+            color: "#ffffff",
+            display: "-webkit-box",
+            fontFamily: remotionFontFamily,
+            fontSize: captionFontSize(meme.caption),
+            fontWeight: 700,
+            lineHeight: 1.04,
+            overflow: "hidden",
             textAlign: "center",
+            textShadow: "0 4px 18px rgba(0,0,0,0.34)",
+            WebkitBoxOrient: "vertical",
+            WebkitLineClamp: 2,
           }}
         >
           {meme.caption}
         </div>
-        {props.caption ? (
-          <div
-            style={{
-              color: "rgba(248,250,252,0.76)",
-              fontSize: 30,
-              fontWeight: 700,
-              lineHeight: 1.12,
-              marginTop: 24,
-              textAlign: "center",
-            }}
-          >
-            {props.caption}
-          </div>
-        ) : null}
       </div>
+
+      <GrainOverlay
+        blendMode="overlay"
+        opacity={0.075}
+        size={180}
+        style={{ zIndex: 20 }}
+      />
     </AbsoluteFill>
   );
 }
