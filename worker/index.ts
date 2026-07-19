@@ -15,10 +15,10 @@ import {
   markContentItemRenderStarted,
 } from "../src/lib/jobs/render-status";
 import { renderVideoJob } from "./render";
-import { StubR2RenderedVideoUploader } from "./r2-upload";
+import { RenderedVideoStorageUploader } from "./r2-upload";
 
 const connection = getRedisConnectionOptions();
-const renderedVideoUploader = new StubR2RenderedVideoUploader();
+const renderedVideoUploader = new RenderedVideoStorageUploader();
 
 const renderWorker = new Worker<RenderJobData>(
   renderQueueName,
@@ -27,6 +27,7 @@ const renderWorker = new Worker<RenderJobData>(
       compositionId: job.data.compositionId,
       contentItemId: job.data.contentItemId,
       jobId: job.id,
+      workspaceId: job.data.workspaceId ?? "unknown",
     });
 
     await markContentItemRenderStarted(job.data.contentItemId);

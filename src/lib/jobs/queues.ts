@@ -8,6 +8,7 @@ export type RenderJobData = {
   contentItemId: string;
   compositionId: string;
   props: Record<string, unknown>;
+  workspaceId: string;
 };
 
 export type ScrapeJobData = {
