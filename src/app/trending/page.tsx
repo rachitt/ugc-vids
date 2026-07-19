@@ -2,7 +2,10 @@ import Link from "next/link";
 import { Filter, Settings, WandSparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { getDefaultGenerationWorkspaceId } from "@/lib/content/trend-generation";
+import {
+  getDefaultGenerationWorkspaceId,
+  TREND_REMIX_VARIANT_COUNT,
+} from "@/lib/content/trend-generation";
 import {
   getTrendTemplateFilterOptions,
   isRemotionCompositionId,
@@ -47,14 +50,54 @@ function trendingHref(filters: TrendHrefFilters) {
   };
 }
 
-function remixMessage(status: string | undefined): string | null {
+type RemixBanner = {
+  message: string;
+  tone: "error" | "success";
+};
+
+function remixCount(value: string | undefined): number {
+  const count = Number(value);
+
+  return Number.isInteger(count) && count >= 0
+    ? count
+    : TREND_REMIX_VARIANT_COUNT;
+}
+
+function remixBanner(
+  status: string | undefined,
+  countParam: string | undefined,
+): RemixBanner | null {
   switch (status) {
-    case "created":
-      return "Remix created as a generated content item.";
+    case "created": {
+      const count = remixCount(countParam);
+      const noun = count === 1 ? "remix" : "remixes";
+      const pronoun = count === 1 ? "it" : "them";
+
+      return {
+        message: `${count} ${noun} generated - see ${pronoun} in Blitz.`,
+        tone: "success",
+      };
+    }
+    case "failed":
+      return {
+        message: "Trend remix generation failed. Try again.",
+        tone: "error",
+      };
     case "missing-workspace":
-      return "No workspace is available for this dev stub, so remixing is disabled until a workspace exists.";
+      return {
+        message: "No workspace is available, so remixing is disabled.",
+        tone: "error",
+      };
     case "missing-trend":
-      return "That trend template could not be found.";
+      return {
+        message: "That trend template could not be found.",
+        tone: "error",
+      };
+    case "needs-profile":
+      return {
+        message: "Add a brand profile before remixing trends.",
+        tone: "error",
+      };
     default:
       return null;
   }
@@ -75,7 +118,7 @@ export default async function TrendingPage({
     getTrendTemplateFilterOptions(),
     getDefaultGenerationWorkspaceId(),
   ]);
-  const message = remixMessage(firstParam(params.remix));
+  const banner = remixBanner(firstParam(params.remix), firstParam(params.count));
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -104,9 +147,16 @@ export default async function TrendingPage({
           </Button>
         </div>
 
-        {message ? (
-          <div className="rounded-md border bg-muted px-4 py-3 text-sm text-muted-foreground">
-            {message}
+        {banner ? (
+          <div
+            className={
+              banner.tone === "success"
+                ? "rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+                : "rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            }
+            role="status"
+          >
+            {banner.message}
           </div>
         ) : null}
 

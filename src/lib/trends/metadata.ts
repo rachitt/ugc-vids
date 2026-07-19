@@ -31,7 +31,7 @@ function stringArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === "string");
 }
 
-function parsePromptRecipe(value: unknown): PromptRecipe | null {
+export function parsePromptRecipe(value: unknown): PromptRecipe | null {
   if (!isRecord(value)) {
     return null;
   }

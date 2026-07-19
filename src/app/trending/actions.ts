@@ -4,37 +4,81 @@ import type { Route } from "next";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { batchGenerationRequester } from "@/lib/content/generation-contract";
 import {
   getDefaultGenerationWorkspaceId,
-  stubGenerationRequester,
+  promptRecipeForTrendTemplate,
+  serializePromptRecipeForGeneration,
+  TREND_REMIX_VARIANT_COUNT,
 } from "@/lib/content/trend-generation";
 import { getTrendTemplateById } from "@/lib/trends/queries";
+
+type TrendingRedirectTarget =
+  | "/trending?remix=created&count=0"
+  | "/trending?remix=created&count=1"
+  | "/trending?remix=created&count=2"
+  | "/trending?remix=created&count=3"
+  | "/trending?remix=failed"
+  | "/trending?remix=missing-trend"
+  | "/trending?remix=missing-workspace"
+  | "/trending?remix=needs-profile";
+
+function redirectToTrending(target: TrendingRedirectTarget): never {
+  redirect(target as Route);
+}
+
+function redirectToCreatedRemixes(count: number): never {
+  switch (count) {
+    case 0:
+      return redirectToTrending("/trending?remix=created&count=0");
+    case 1:
+      return redirectToTrending("/trending?remix=created&count=1");
+    case 2:
+      return redirectToTrending("/trending?remix=created&count=2");
+    default:
+      return redirectToTrending("/trending?remix=created&count=3");
+  }
+}
 
 export async function remixTrendAction(formData: FormData) {
   const trendId = String(formData.get("trendId") ?? "");
 
   if (!trendId) {
-    redirect("/trending?remix=missing-trend" as Route);
+    redirectToTrending("/trending?remix=missing-trend");
   }
 
   const trendTemplate = await getTrendTemplateById(trendId);
 
-  if (!trendTemplate) {
-    redirect("/trending?remix=missing-trend" as Route);
+  if (!trendTemplate || !trendTemplate.contentFormat) {
+    redirectToTrending("/trending?remix=missing-trend");
   }
 
   const workspaceId = await getDefaultGenerationWorkspaceId();
 
   if (!workspaceId) {
-    redirect("/trending?remix=missing-workspace" as Route);
+    redirectToTrending("/trending?remix=missing-workspace");
   }
 
-  await stubGenerationRequester.requestGeneration({
+  const promptRecipe = promptRecipeForTrendTemplate(trendTemplate);
+  const result = await batchGenerationRequester.requestGeneration({
+    promptRecipe: serializePromptRecipeForGeneration(promptRecipe),
+    reason: "manual_request",
+    requestedFormats: [trendTemplate.contentFormat],
     source: "trending_remix",
-    trendTemplate,
+    targetCount: TREND_REMIX_VARIANT_COUNT,
+    trendTemplateId: trendTemplate.id,
     workspaceId,
   });
 
+  if (result.status === "blocked") {
+    redirectToTrending("/trending?remix=needs-profile");
+  }
+
+  if (result.status !== "generated") {
+    redirectToTrending("/trending?remix=failed");
+  }
+
+  revalidatePath("/content");
   revalidatePath("/trending");
-  redirect("/trending?remix=created" as Route);
+  redirectToCreatedRemixes(result.generatedCount ?? 0);
 }
