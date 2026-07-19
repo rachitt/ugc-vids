@@ -1,12 +1,16 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { brandProfiles } from "@/lib/db/schema";
-import { parsePromptRecipe } from "@/lib/trends/metadata";
+import { brandProfiles, contentItems } from "@/lib/db/schema";
+import {
+  parsePromptRecipe,
+  type PromptRecipe,
+} from "@/lib/trends/metadata";
 
 import { generateMixedContentBatch } from "./batch";
 import {
   clampBatchSize,
+  contentFormatLabels,
   isRenderableContentFormat,
   type ContentFormat,
   type RenderableContentFormat,
@@ -26,6 +30,7 @@ export type GenerationRequest = {
   sourceContentItemId?: string;
   trendTemplateId?: string;
   promptRecipe?: string;
+  variantOfContentItemId?: string;
 };
 
 export type GenerationRequestResult = {
@@ -107,6 +112,141 @@ function promptRecipeForRequest(request: GenerationRequest) {
   throw new Error("Prompt recipe must be valid JSON with the required fields.");
 }
 
+type VariantSourceItem = Pick<
+  typeof contentItems.$inferSelect,
+  "format" | "id" | "script" | "trendTemplateId"
+>;
+
+type PreparedGenerationRequest = {
+  formats?: RenderableContentFormat[];
+  promptRecipe?: PromptRecipe;
+  totalCount?: number;
+  trendTemplateId?: string | null;
+  variantOfContentItemId?: string;
+};
+
+async function prepareGenerationRequest(
+  request: GenerationRequest,
+): Promise<PreparedGenerationRequest> {
+  if (!request.variantOfContentItemId) {
+    return {
+      formats: formatPlanForRequest(request),
+      promptRecipe: promptRecipeForRequest(request),
+      totalCount: totalCountForRequest(request),
+      trendTemplateId: request.trendTemplateId,
+    };
+  }
+
+  const [sourceItem] = await db
+    .select({
+      format: contentItems.format,
+      id: contentItems.id,
+      script: contentItems.script,
+      trendTemplateId: contentItems.trendTemplateId,
+    })
+    .from(contentItems)
+    .where(
+      and(
+        eq(contentItems.id, request.variantOfContentItemId),
+        eq(contentItems.workspaceId, request.workspaceId),
+      ),
+    )
+    .limit(1);
+
+  if (!sourceItem) {
+    throw new Error("Variant source content item was not found.");
+  }
+
+  if (!isRenderableContentFormat(sourceItem.format)) {
+    throw new Error("Variant source format is not renderable.");
+  }
+
+  const sourceFormat: RenderableContentFormat = sourceItem.format;
+  const count = clampBatchSize(totalCountForRequest(request) ?? 1);
+
+  return {
+    formats: Array.from({ length: count }, () => sourceFormat),
+    promptRecipe: promptRecipeForVariantSource(sourceItem),
+    totalCount: count,
+    trendTemplateId: sourceItem.trendTemplateId,
+    variantOfContentItemId: sourceItem.id,
+  };
+}
+
+function promptRecipeForVariantSource(
+  sourceItem: VariantSourceItem,
+): PromptRecipe {
+  const sourceHook = limitRecipeText(readSourceScriptText(sourceItem, "hook"));
+  const sourceCaption = limitRecipeText(
+    readSourceScriptText(sourceItem, "caption"),
+  );
+  const sourceBeats = readSourceScriptBeats(sourceItem).map(limitRecipeText);
+  const formatLabel = contentFormatLabels[sourceItem.format];
+
+  return {
+    avoid: [
+      "copying the source hook verbatim",
+      "reusing the exact source slide or line wording",
+      "changing the core topic or audience",
+    ],
+    beats: [
+      `Source hook: ${sourceHook}`,
+      `Source caption: ${sourceCaption}`,
+      ...sourceBeats.map((beat) => `Source beat: ${beat}`),
+    ],
+    cta: "Keep the call to action aligned with the source, but write it freshly.",
+    generationNotes: [
+      "VARIANT REQUEST: produce a fresh variant of the source content item.",
+      `Keep the same format: ${formatLabel}.`,
+      "Keep the same core angle/topic and audience intent.",
+      "Use different hook phrasing and different slides or lines.",
+      `Source hook: ${sourceHook}`,
+      `Source caption: ${sourceCaption}`,
+    ].join(" "),
+    hook: `Variant of: ${sourceHook}`,
+    setup:
+      "Use the source winner as the strategic reference, not as copy to paraphrase line by line.",
+    visualPlan: [
+      `Use the ${formatLabel} structure.`,
+      "Open with a fresh first-frame hook.",
+      "Change the middle beats while preserving the winning angle.",
+      "End with a caption and CTA that feel related but new.",
+    ],
+  };
+}
+
+function readSourceScriptText(
+  sourceItem: VariantSourceItem,
+  key: "caption" | "hook",
+) {
+  const value = sourceItem.script?.[key];
+
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : "No source text provided";
+}
+
+function readSourceScriptBeats(sourceItem: VariantSourceItem) {
+  const slides = Array.isArray(sourceItem.script?.slides)
+    ? sourceItem.script.slides
+    : [];
+  const lines = Array.isArray(sourceItem.script?.lines)
+    ? sourceItem.script.lines
+    : [];
+
+  return [...slides, ...lines].filter(
+    (beat): beat is string => typeof beat === "string" && beat.trim().length > 0,
+  );
+}
+
+function limitRecipeText(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+
+  return normalized.length > 240
+    ? `${normalized.slice(0, 237).trimEnd()}...`
+    : normalized;
+}
+
 function validateGenerationRequest(request: GenerationRequest) {
   if (request.source !== "trending_remix") {
     return;
@@ -144,13 +284,15 @@ export const batchGenerationRequester: GenerationRequester = {
 
     try {
       validateGenerationRequest(request);
+      const preparedRequest = await prepareGenerationRequest(request);
 
       const result = await generateMixedContentBatch({
         brandProfileId: brandProfile.id,
-        formats: formatPlanForRequest(request),
-        promptRecipe: promptRecipeForRequest(request),
-        totalCount: totalCountForRequest(request),
-        trendTemplateId: request.trendTemplateId,
+        formats: preparedRequest.formats,
+        promptRecipe: preparedRequest.promptRecipe,
+        totalCount: preparedRequest.totalCount,
+        trendTemplateId: preparedRequest.trendTemplateId,
+        variantOfContentItemId: preparedRequest.variantOfContentItemId,
         workspaceId: request.workspaceId,
       });
 

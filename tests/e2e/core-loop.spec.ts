@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { and, desc, eq } from "drizzle-orm";
 
-import { db, pool } from "../../src/lib/db";
+import { db } from "../../src/lib/db";
 import {
   brandProfiles,
   calendarSlots,
@@ -20,7 +20,8 @@ const testEmail = `core-loop-${runId}@example.test`;
 
 test.afterAll(async () => {
   await deleteTestRows();
-  await pool.end();
+  // Do not end the shared pool: spec files run sequentially in one worker
+  // process, so ending it breaks every spec that runs after this one.
 });
 
 test("runs the fake-AI core loop through render, calendar, and download", async ({

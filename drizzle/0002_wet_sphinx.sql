@@ -1,0 +1,2 @@
+ALTER TABLE "content_items" ADD COLUMN "variant_of" uuid;--> statement-breakpoint
+ALTER TABLE "content_items" ADD CONSTRAINT "content_items_variant_of_content_items_id_fk" FOREIGN KEY ("variant_of") REFERENCES "public"."content_items"("id") ON DELETE set null ON UPDATE no action;

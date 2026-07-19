@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Clapperboard, Sparkles, Undo2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { requestContentVariants } from "@/app/actions/variants";
 import { ContentThumbnail } from "@/components/content/content-thumbnail";
 import { FormatBadge } from "@/components/content/format-badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,6 @@ import type {
 } from "@/lib/content/types";
 
 import {
-  moreLikeThisLibraryItem,
   rejectLibraryItem,
   renderLibraryItem,
   unsaveLibraryItem,
@@ -79,14 +79,23 @@ export function LibraryGrid({ items, saveLimit }: LibraryGridProps) {
 
   function signalMoreLikeThis(item: ContentItemSummary) {
     setMessage(null);
-    setSignals((current) => ({ ...current, [item.id]: "Recording..." }));
+    setSignals((current) => ({
+      ...current,
+      [item.id]: "Requesting variants...",
+    }));
 
     startTransition(() => {
-      void moreLikeThisLibraryItem(item.id)
+      void requestContentVariants({
+        contentItemId: item.id,
+        count: 2,
+        source: "manual",
+      })
         .then((result) => {
           setSignals((current) => ({
             ...current,
-            [item.id]: result.ok ? "Signal recorded" : "Signal failed",
+            [item.id]: result.ok
+              ? `${result.createdCount} variants queued - review in Blitz`
+              : "Variant request failed",
           }));
 
           if (!result.ok) {
@@ -96,9 +105,9 @@ export function LibraryGrid({ items, saveLimit }: LibraryGridProps) {
         .catch(() => {
           setSignals((current) => ({
             ...current,
-            [item.id]: "Signal failed",
+            [item.id]: "Variant request failed",
           }));
-          setMessage("The preference signal could not be saved. Try again.");
+          setMessage("The variant request could not be recorded. Try again.");
         });
     });
   }

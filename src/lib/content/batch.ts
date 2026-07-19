@@ -34,6 +34,7 @@ type GenerateMixedContentBatchInput = {
   promptRecipe?: PromptRecipe;
   totalCount?: number;
   trendTemplateId?: string | null;
+  variantOfContentItemId?: string | null;
   workspaceId: string;
 };
 
@@ -43,6 +44,7 @@ export async function generateMixedContentBatch({
   promptRecipe,
   totalCount = DEFAULT_MIXED_BATCH_SIZE,
   trendTemplateId,
+  variantOfContentItemId,
   workspaceId,
 }: GenerateMixedContentBatchInput): Promise<MixedContentBatchResult> {
   const [brandProfile] = await db
@@ -76,6 +78,7 @@ export async function generateMixedContentBatch({
         format,
         promptRecipe,
         trendTemplateId,
+        variantOfContentItemId,
       });
 
       items.push(...result.items);
