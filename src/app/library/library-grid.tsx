@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Sparkles, Undo2, X } from "lucide-react";
+import { Clapperboard, Sparkles, Undo2, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { ContentThumbnail } from "@/components/content/content-thumbnail";
 import { FormatBadge } from "@/components/content/format-badge";
@@ -16,6 +17,7 @@ import type {
 import {
   moreLikeThisLibraryItem,
   rejectLibraryItem,
+  renderLibraryItem,
   unsaveLibraryItem,
 } from "./actions";
 
@@ -33,6 +35,7 @@ function getCapLabel(saveLimit: SaveLimit) {
 }
 
 export function LibraryGrid({ items, saveLimit }: LibraryGridProps) {
+  const router = useRouter();
   const [visibleItems, setVisibleItems] = useState(items);
   const [message, setMessage] = useState<string | null>(null);
   const [signals, setSignals] = useState<Record<string, string>>({});
@@ -100,6 +103,35 @@ export function LibraryGrid({ items, saveLimit }: LibraryGridProps) {
     });
   }
 
+  function queueRender(item: ContentItemSummary) {
+    setMessage(null);
+    setSignals((current) => ({ ...current, [item.id]: "Queueing render..." }));
+
+    startTransition(() => {
+      void renderLibraryItem(item.id)
+        .then((result) => {
+          setSignals((current) => ({
+            ...current,
+            [item.id]: result.ok ? "Render queued" : "Render failed",
+          }));
+
+          if (!result.ok) {
+            setMessage(result.error);
+            return;
+          }
+
+          router.refresh();
+        })
+        .catch(() => {
+          setSignals((current) => ({
+            ...current,
+            [item.id]: "Render failed",
+          }));
+          setMessage("The render could not be queued. Try again.");
+        });
+    });
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-2 border-b pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -136,6 +168,7 @@ export function LibraryGrid({ items, saveLimit }: LibraryGridProps) {
 
             return (
               <article
+                data-library-content-item-id={item.id}
                 className="grid min-h-[420px] grid-cols-[120px_1fr] gap-4 rounded-lg border bg-card p-4 text-card-foreground sm:grid-cols-1"
                 key={item.id}
               >
@@ -172,12 +205,38 @@ export function LibraryGrid({ items, saveLimit }: LibraryGridProps) {
                   <p className="mt-3 line-clamp-5 text-sm leading-6 text-muted-foreground">
                     {getScriptPreview(item.script)}
                   </p>
+                  <p className="mt-3 text-xs font-medium uppercase text-muted-foreground">
+                    {item.renderStatus}
+                  </p>
                   {item.script.hashtags && item.script.hashtags.length > 0 ? (
                     <p className="mt-3 line-clamp-2 text-xs leading-5 text-muted-foreground">
                       {item.script.hashtags.map((tag) => `#${tag}`).join(" ")}
                     </p>
                   ) : null}
                   <div className="mt-auto flex flex-wrap gap-2 pt-5">
+                    <Button
+                      disabled={
+                        isPending ||
+                        item.renderStatus === "queued" ||
+                        item.renderStatus === "rendering" ||
+                        item.renderStatus === "rendered"
+                      }
+                      onClick={() => queueRender(item)}
+                      size="sm"
+                      type="button"
+                      variant={
+                        item.renderStatus === "failed" ? "secondary" : "default"
+                      }
+                    >
+                      <Clapperboard className="size-4" aria-hidden="true" />
+                      {item.renderStatus === "queued"
+                        ? "Queued"
+                        : item.renderStatus === "rendering"
+                          ? "Rendering"
+                          : item.renderStatus === "rendered"
+                            ? "Rendered"
+                            : "Render"}
+                    </Button>
                     <Button
                       disabled={isPending}
                       onClick={() => signalMoreLikeThis(item)}

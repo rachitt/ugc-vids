@@ -1,8 +1,7 @@
-import {
-  query,
-  type SDKAssistantMessage,
-  type SDKMessage,
-  type SDKResultMessage,
+import type {
+  SDKAssistantMessage,
+  SDKMessage,
+  SDKResultMessage,
 } from "@anthropic-ai/claude-agent-sdk";
 
 export type ClaudeAgentTask = {
@@ -16,6 +15,13 @@ export type ClaudeAgentTask = {
 export async function runClaudeAgentTask<T = string>(
   task: ClaudeAgentTask,
 ): Promise<T> {
+  if (process.env.FASTLANE_FAKE_AI === "1") {
+    const { getFakeClaudeAgentTaskOutput } = await import("./fake-fixtures");
+
+    return getFakeClaudeAgentTaskOutput(task) as T;
+  }
+
+  const { query } = await import("@anthropic-ai/claude-agent-sdk");
   let resultMessage: SDKResultMessage | undefined;
   let assistantText = "";
 
