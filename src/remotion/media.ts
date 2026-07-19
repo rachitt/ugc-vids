@@ -1,4 +1,7 @@
 import type { MediaAsset, RemotionTheme } from "../lib/video/remotion-props";
+import { staticFile } from "remotion";
+
+import { getAssetById } from "../lib/assets/manifest";
 
 export const SILENT_AUDIO_SRC =
   "data:audio/wav;base64,UklGRmQBAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YUABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
@@ -91,6 +94,16 @@ export function resolveMediaSrc(asset: MediaAsset | undefined): string {
     return placeholderSvg("product", "Product shot");
   }
 
+  if (src.startsWith("asset:")) {
+    const manifestAsset = getAssetById(src.replace("asset:", ""));
+
+    if (manifestAsset) {
+      return staticFile(manifestAsset.file);
+    }
+
+    return placeholderSvg("product", asset?.label ?? "Product shot");
+  }
+
   if (src.startsWith("placeholder:")) {
     const kind = src.replace("placeholder:", "");
     const label = asset?.label ?? placeholderLabels[kind] ?? "Placeholder";
@@ -104,6 +117,12 @@ export function resolveMediaSrc(asset: MediaAsset | undefined): string {
 export function resolveAudioSrc(src: string | undefined): string {
   if (!src || src === "silent:placeholder") {
     return SILENT_AUDIO_SRC;
+  }
+
+  if (src.startsWith("asset:")) {
+    const asset = getAssetById(src.replace("asset:", ""));
+
+    return asset ? staticFile(asset.file) : SILENT_AUDIO_SRC;
   }
 
   return src;

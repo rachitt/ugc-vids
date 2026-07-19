@@ -15,13 +15,17 @@
     "secondary": "#14b8a6",
     "muted": "#ccfbf1"
   },
+  "music": {
+    "src": "asset:music/upbeat-01",
+    "volume": 0.06
+  },
   "greenscreenMeme": {
     "background": {
-      "src": "placeholder:meme",
+      "src": "asset:meme-bg/memebg-13",
       "label": "Spreadsheet chaos"
     },
     "persona": {
-      "src": "placeholder:persona",
+      "src": "asset:personas/persona-05",
       "label": "Founder"
     },
     "caption": "When every lead finally has an owner",

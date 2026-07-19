@@ -1,5 +1,6 @@
 import {
   AbsoluteFill,
+  Audio,
   Img,
   interpolate,
   useCurrentFrame,
@@ -7,7 +8,7 @@ import {
 } from "remotion";
 
 import type { RemotionProps } from "../lib/video/remotion-props";
-import { resolveMediaSrc, themeOrDefault } from "./media";
+import { resolveAudioSrc, resolveMediaSrc, themeOrDefault } from "./media";
 import { BrandBug, HashtagRow, remotionFontFamily } from "./primitives";
 import { parseCompositionProps } from "./props";
 
@@ -57,6 +58,11 @@ export function WallOfText(inputProps: RemotionProps) {
           opacity: 0.32,
           position: "absolute",
         }}
+      />
+      <Audio
+        loop
+        src={resolveAudioSrc(props.music?.src)}
+        volume={props.music?.volume ?? 0.08}
       />
       {broll ? (
         <Img

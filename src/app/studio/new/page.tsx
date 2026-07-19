@@ -19,6 +19,8 @@ type NewAvatarPageProps = {
   searchParams?: Promise<StudioSearchParams>;
 };
 
+export const dynamic = "force-dynamic";
+
 function labelFor(value: string) {
   return value
     .split(/[_-]/)
