@@ -10,6 +10,8 @@ import {
 
 import { LibraryGrid } from "./library-grid";
 
+export const dynamic = "force-dynamic";
+
 export default async function LibraryPage() {
   const workspace = await getActiveWorkspace();
 

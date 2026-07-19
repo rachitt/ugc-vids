@@ -18,6 +18,8 @@ type ClipsPageProps = {
   searchParams?: Promise<StudioSearchParams>;
 };
 
+export const dynamic = "force-dynamic";
+
 type ClipRow = typeof humanUgcClips.$inferSelect;
 
 function filterValue(

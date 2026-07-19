@@ -16,7 +16,7 @@
     "muted": "#94a3b8"
   },
   "music": {
-    "src": "silent:placeholder",
+    "src": "asset:music/upbeat-01",
     "volume": 0.06
   },
   "slideshow": {
@@ -24,7 +24,7 @@
     "slides": [
       {
         "image": {
-          "src": "placeholder:dashboard",
+          "src": "asset:broll/broll-01",
           "label": "Unified pipeline"
         },
         "eyebrow": "Reason 1",
@@ -32,7 +32,7 @@
       },
       {
         "image": {
-          "src": "placeholder:analytics",
+          "src": "asset:broll/broll-06",
           "label": "Attribution view"
         },
         "eyebrow": "Reason 2",
@@ -40,7 +40,7 @@
       },
       {
         "image": {
-          "src": "placeholder:workflow",
+          "src": "asset:broll/broll-22",
           "label": "Launch checklist"
         },
         "eyebrow": "Reason 3",

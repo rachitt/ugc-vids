@@ -1,5 +1,6 @@
 import {
   AbsoluteFill,
+  Audio,
   interpolate,
   spring,
   useCurrentFrame,
@@ -7,7 +8,7 @@ import {
 } from "remotion";
 
 import type { RemotionProps } from "../lib/video/remotion-props";
-import { themeOrDefault } from "./media";
+import { resolveAudioSrc, themeOrDefault } from "./media";
 import {
   BackgroundWash,
   BrandBug,
@@ -64,6 +65,11 @@ export function HookDemo(inputProps: RemotionProps) {
       }}
     >
       <BackgroundWash theme={theme} />
+      <Audio
+        loop
+        src={resolveAudioSrc(props.music?.src)}
+        volume={props.music?.volume ?? 0.08}
+      />
       <BrandBug props={props} />
 
       <div

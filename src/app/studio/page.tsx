@@ -21,6 +21,8 @@ type StudioPageProps = {
   searchParams?: Promise<StudioSearchParams>;
 };
 
+export const dynamic = "force-dynamic";
+
 function filterValue(
   searchParams: StudioSearchParams,
   key: keyof StudioSearchParams,

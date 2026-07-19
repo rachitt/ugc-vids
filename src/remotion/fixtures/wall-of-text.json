@@ -15,13 +15,17 @@
     "secondary": "#0ea5e9",
     "muted": "#cbd5e1"
   },
+  "music": {
+    "src": "asset:music/chill-01",
+    "volume": 0.06
+  },
   "wallOfText": {
     "headline": "Your best sales page is probably hiding in your support inbox.",
     "body": "Start with the objection customers repeat most.\nShow the before-state in plain language.\nThen show the product moment that makes the problem disappear.\nThat becomes a save-worthy short instead of another generic ad.",
     "sourceLabel": "UGC angle",
     "broll": [
       {
-        "src": "placeholder:social",
+        "src": "asset:gradients/gradient-05",
         "label": "Customer proof"
       }
     ]
