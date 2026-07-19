@@ -28,8 +28,10 @@ export type ContentItemSummary = {
   workspaceId: string;
   format: ContentFormat;
   status: ContentStatus;
+  renderStatus: typeof contentItems.$inferSelect.renderStatus;
   script: ContentScript;
   thumbUrl: string | null;
+  videoUrl: string | null;
   createdAt: string;
   updatedAt: string;
 };

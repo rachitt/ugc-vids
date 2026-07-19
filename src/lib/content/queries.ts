@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { and, count, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
@@ -21,8 +22,10 @@ function toContentItemSummary(
     workspaceId: item.workspaceId,
     format: item.format,
     status: item.status,
+    renderStatus: item.renderStatus,
     script: item.script as ContentScript,
     thumbUrl: item.thumbUrl,
+    videoUrl: item.videoUrl,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
   };
@@ -41,6 +44,8 @@ export function getPlanSaveCap(plan: WorkspacePlan) {
 }
 
 export async function getActiveWorkspace(): Promise<WorkspaceSummary | null> {
+  noStore();
+
   const [workspace] = await db
     .select({
       id: workspaces.id,

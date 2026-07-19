@@ -10,6 +10,7 @@ export type NormalizedRenderJob = {
   compositionId: RemotionCompositionId;
   props: RemotionProps;
   serveUrl?: string;
+  workspaceId: string;
 };
 
 type RenderJobLike = {
@@ -17,6 +18,7 @@ type RenderJobLike = {
   compositionId?: unknown;
   props?: unknown;
   serveUrl?: unknown;
+  workspaceId?: unknown;
 };
 
 export function normalizeRenderJobData(input: unknown): NormalizedRenderJob {
@@ -37,5 +39,9 @@ export function normalizeRenderJobData(input: unknown): NormalizedRenderJob {
     contentItemId: job.contentItemId,
     props,
     serveUrl: typeof job.serveUrl === "string" ? job.serveUrl : undefined,
+    workspaceId:
+      typeof job.workspaceId === "string" && job.workspaceId.length > 0
+        ? job.workspaceId
+        : "unknown",
   };
 }

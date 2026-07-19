@@ -32,6 +32,7 @@ export async function enqueueContentItemRender({
       format: contentItems.format,
       id: contentItems.id,
       remotionProps: contentItems.remotionProps,
+      workspaceId: contentItems.workspaceId,
     })
     .from(contentItems)
     .where(eq(contentItems.id, contentItemId))
@@ -61,6 +62,7 @@ export async function enqueueContentItemRender({
         compositionId,
         contentItemId: item.id,
         props: props as unknown as Record<string, unknown>,
+        workspaceId: item.workspaceId,
       },
       {
         attempts: 1,

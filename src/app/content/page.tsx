@@ -237,15 +237,22 @@ function ContentItemCard({ item }: { item: ContentListItem }) {
           </div>
         ) : null}
 
-        {item.videoUrl ? (
-          <a
-            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-            href={item.videoUrl}
-            rel="noreferrer"
-            target="_blank"
-          >
-            Open rendered video
-          </a>
+        {item.renderStatus === "rendered" && item.videoUrl ? (
+          <div className="grid max-w-sm gap-2">
+            <video
+              className="aspect-video w-full rounded-md bg-black"
+              controls
+              preload="metadata"
+              src={item.videoUrl}
+            />
+            <a
+              className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+              download
+              href={item.videoUrl}
+            >
+              Download rendered video
+            </a>
+          </div>
         ) : null}
 
         <div className="flex flex-wrap gap-2">

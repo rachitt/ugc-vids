@@ -72,7 +72,9 @@ export async function renderVideoJob(
     serveUrl,
   });
 
-  const key = `renders/${outputName}`;
+  const workspacePath = safePathSegment(job.workspaceId) || "unknown";
+  const contentItemPath = safePathSegment(job.contentItemId) || "unknown";
+  const key = `renders/${workspacePath}/${contentItemPath}/${Date.now()}.mp4`;
   const upload = await uploader.uploadRenderedVideo({
     contentType: "video/mp4",
     key,

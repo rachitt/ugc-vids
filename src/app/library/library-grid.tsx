@@ -130,73 +130,96 @@ export function LibraryGrid({ items, saveLimit }: LibraryGridProps) {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {visibleItems.map((item) => (
-            <article
-              className="grid min-h-[420px] grid-cols-[120px_1fr] gap-4 rounded-lg border bg-card p-4 text-card-foreground sm:grid-cols-1"
-              key={item.id}
-            >
-              <ContentThumbnail
-                className="h-full min-h-[230px] sm:h-auto"
-                format={item.format}
-                thumbUrl={item.thumbUrl}
-              />
-              <div className="flex min-w-0 flex-col">
-                <div className="mb-3">
-                  <FormatBadge format={item.format} />
-                </div>
-                <h2 className="text-lg font-semibold leading-tight tracking-normal">
-                  {getScriptHook(item.script)}
-                </h2>
-                <p className="mt-3 line-clamp-5 text-sm leading-6 text-muted-foreground">
-                  {getScriptPreview(item.script)}
-                </p>
-                {item.script.hashtags && item.script.hashtags.length > 0 ? (
-                  <p className="mt-3 line-clamp-2 text-xs leading-5 text-muted-foreground">
-                    {item.script.hashtags.map((tag) => `#${tag}`).join(" ")}
+          {visibleItems.map((item) => {
+            const renderedVideoUrl =
+              item.renderStatus === "rendered" ? item.videoUrl : null;
+
+            return (
+              <article
+                className="grid min-h-[420px] grid-cols-[120px_1fr] gap-4 rounded-lg border bg-card p-4 text-card-foreground sm:grid-cols-1"
+                key={item.id}
+              >
+                {renderedVideoUrl ? (
+                  <div className="grid gap-2">
+                    <video
+                      className="aspect-video w-full rounded-md bg-black"
+                      controls
+                      preload="metadata"
+                      src={renderedVideoUrl}
+                    />
+                    <a
+                      className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                      download
+                      href={renderedVideoUrl}
+                    >
+                      Download rendered video
+                    </a>
+                  </div>
+                ) : (
+                  <ContentThumbnail
+                    className="h-full min-h-[230px] sm:h-auto"
+                    format={item.format}
+                    thumbUrl={item.thumbUrl}
+                  />
+                )}
+                <div className="flex min-w-0 flex-col">
+                  <div className="mb-3">
+                    <FormatBadge format={item.format} />
+                  </div>
+                  <h2 className="text-lg font-semibold leading-tight tracking-normal">
+                    {getScriptHook(item.script)}
+                  </h2>
+                  <p className="mt-3 line-clamp-5 text-sm leading-6 text-muted-foreground">
+                    {getScriptPreview(item.script)}
                   </p>
-                ) : null}
-                <div className="mt-auto flex flex-wrap gap-2 pt-5">
-                  <Button
-                    disabled={isPending}
-                    onClick={() => signalMoreLikeThis(item)}
-                    size="sm"
-                    type="button"
-                    variant="secondary"
-                  >
-                    <Sparkles className="size-4" aria-hidden="true" />
-                    More like this
-                  </Button>
-                  <Button
-                    aria-label="Unsave content item"
-                    disabled={isPending}
-                    onClick={() => removeWithAction(item, unsaveLibraryItem)}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    <Undo2 className="size-4" aria-hidden="true" />
-                    Unsave
-                  </Button>
-                  <Button
-                    aria-label="Reject content item"
-                    disabled={isPending}
-                    onClick={() => removeWithAction(item, rejectLibraryItem)}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    <X className="size-4" aria-hidden="true" />
-                    Reject
-                  </Button>
+                  {item.script.hashtags && item.script.hashtags.length > 0 ? (
+                    <p className="mt-3 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                      {item.script.hashtags.map((tag) => `#${tag}`).join(" ")}
+                    </p>
+                  ) : null}
+                  <div className="mt-auto flex flex-wrap gap-2 pt-5">
+                    <Button
+                      disabled={isPending}
+                      onClick={() => signalMoreLikeThis(item)}
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
+                      <Sparkles className="size-4" aria-hidden="true" />
+                      More like this
+                    </Button>
+                    <Button
+                      aria-label="Unsave content item"
+                      disabled={isPending}
+                      onClick={() => removeWithAction(item, unsaveLibraryItem)}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      <Undo2 className="size-4" aria-hidden="true" />
+                      Unsave
+                    </Button>
+                    <Button
+                      aria-label="Reject content item"
+                      disabled={isPending}
+                      onClick={() => removeWithAction(item, rejectLibraryItem)}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      <X className="size-4" aria-hidden="true" />
+                      Reject
+                    </Button>
+                  </div>
+                  {signals[item.id] ? (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      {signals[item.id]}
+                    </p>
+                  ) : null}
                 </div>
-                {signals[item.id] ? (
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    {signals[item.id]}
-                  </p>
-                ) : null}
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
     </div>
