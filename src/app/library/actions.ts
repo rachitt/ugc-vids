@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 
 import {
-  recordMoreLikeThisSignal,
   rejectContentItem,
   unsaveContentItem,
 } from "@/lib/content/mutations";
@@ -27,16 +26,6 @@ export async function rejectLibraryItem(
   const result = await rejectContentItem(contentItemId);
 
   revalidatePath("/blitz");
-  revalidatePath("/library");
-
-  return result;
-}
-
-export async function moreLikeThisLibraryItem(
-  contentItemId: string,
-): Promise<ContentActionResult> {
-  const result = await recordMoreLikeThisSignal(contentItemId);
-
   revalidatePath("/library");
 
   return result;

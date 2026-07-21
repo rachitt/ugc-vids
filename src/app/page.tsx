@@ -1,12 +1,12 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { desc } from "drizzle-orm";
-import { ArrowRight, Globe2, Sparkles, Tag } from "lucide-react";
+import { desc, eq } from "drizzle-orm";
+import { Sparkles, Tag } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { createBrandProfileAction } from "@/app/brand-profiles/actions";
+import { BrandIntakeForm } from "@/components/brand-intake-form";
 import { db } from "@/lib/db";
 import { brandProfiles } from "@/lib/db/schema";
+import { getActiveWorkspaceContext } from "@/lib/workspaces";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,8 @@ export default async function Home({ searchParams }: HomeProps) {
   const params = await searchParams;
   const error =
     typeof params?.error === "string" ? params.error : params?.error?.[0];
-  const recentProfiles = await getRecentBrandProfiles();
+  const { workspace } = await getActiveWorkspaceContext();
+  const recentProfiles = await getRecentBrandProfiles(workspace.id);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -56,38 +57,7 @@ export default async function Home({ searchParams }: HomeProps) {
               </p>
             </div>
 
-            <form
-              action={createBrandProfileAction}
-              className="flex max-w-2xl flex-col gap-4 rounded-lg border bg-card p-4 text-card-foreground shadow-sm"
-            >
-              <label className="text-sm font-medium" htmlFor="url">
-                Website URL
-              </label>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <div className="relative flex-1">
-                  <Globe2
-                    className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <input
-                    className="h-11 w-full rounded-md border bg-background pl-10 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20"
-                    id="url"
-                    name="url"
-                    placeholder="https://example.com"
-                    type="url"
-                  />
-                </div>
-                <Button className="h-11 sm:w-36" type="submit">
-                  Analyze
-                  <ArrowRight className="size-4" aria-hidden="true" />
-                </Button>
-              </div>
-              {error ? (
-                <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {error}
-                </p>
-              ) : null}
-            </form>
+            <BrandIntakeForm error={error} />
           </section>
 
           <aside className="flex flex-col gap-3 pt-8">
@@ -137,7 +107,7 @@ export default async function Home({ searchParams }: HomeProps) {
   );
 }
 
-async function getRecentBrandProfiles() {
+async function getRecentBrandProfiles(workspaceId: string) {
   return db
     .select({
       audience: brandProfiles.audience,
@@ -147,6 +117,7 @@ async function getRecentBrandProfiles() {
       url: brandProfiles.url,
     })
     .from(brandProfiles)
+    .where(eq(brandProfiles.workspaceId, workspaceId))
     .orderBy(desc(brandProfiles.updatedAt))
     .limit(6);
 }

@@ -1,13 +1,6 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
-import {
-  Check,
-  Clock3,
-  FileText,
-  Save,
-  Sparkles,
-  Trash2,
-} from "lucide-react";
+import { Check, Clock3, FileText, Save, Sparkles, Trash2 } from "lucide-react";
 
 import {
   generateContentBatchAction,
@@ -24,7 +17,7 @@ import {
 } from "@/lib/content/formats";
 import { db } from "@/lib/db";
 import { brandProfiles, contentItems } from "@/lib/db/schema";
-import { getOrCreateDefaultWorkspace } from "@/lib/workspaces";
+import { getActiveWorkspaceContext } from "@/lib/workspaces";
 import {
   validateRemotionProps,
   type RemotionProps,
@@ -65,7 +58,7 @@ type ContentListItem = {
 
 export default async function ContentPage({ searchParams }: ContentPageProps) {
   const params = await searchParams;
-  const workspace = await getOrCreateDefaultWorkspace();
+  const { workspace } = await getActiveWorkspaceContext();
   const profiles = await getBrandProfiles(workspace.id);
   const selectedProfileId =
     getSingleParam(params?.brandProfileId) ?? profiles[0]?.id ?? "";
@@ -102,7 +95,6 @@ export default async function ContentPage({ searchParams }: ContentPageProps) {
             action={generateContentBatchAction}
             className="flex flex-col gap-4 lg:flex-row lg:items-end"
           >
-            <input name="workspaceId" type="hidden" value={workspace.id} />
             <input
               name="totalCount"
               type="hidden"
@@ -291,7 +283,9 @@ async function getBrandProfiles(workspaceId: string) {
     .orderBy(desc(brandProfiles.updatedAt));
 }
 
-async function getContentItems(workspaceId: string): Promise<ContentListItem[]> {
+async function getContentItems(
+  workspaceId: string,
+): Promise<ContentListItem[]> {
   const rows = await db
     .select({
       brandProfileId: contentItems.brandProfileId,
@@ -311,7 +305,8 @@ async function getContentItems(workspaceId: string): Promise<ContentListItem[]> 
 
   return rows
     .filter(
-      (row) => row.status !== "rejected" && isRenderableContentFormat(row.format),
+      (row) =>
+        row.status !== "rejected" && isRenderableContentFormat(row.format),
     )
     .map((row) => {
       const remotionProps = safeValidateRemotionProps(row.remotionProps);

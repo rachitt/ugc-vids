@@ -1,15 +1,12 @@
-import { desc, eq } from "drizzle-orm";
-
-import { db } from "@/lib/db";
-import { workspaces } from "@/lib/db/schema";
+import {
+  getActiveWorkspaceContext,
+  getWorkspaceById,
+  type WorkspaceSummary,
+} from "@/lib/workspaces";
 
 export type StudioSearchParams = Record<string, string | string[] | undefined>;
 
-export type StudioWorkspace = {
-  id: string;
-  name: string;
-  plan: "free" | "starter" | "growth" | "pro";
-};
+export type StudioWorkspace = WorkspaceSummary;
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -28,32 +25,16 @@ export async function resolveStudioWorkspace(
   const requestedWorkspaceId = firstSearchParam(searchParams.workspaceId);
 
   if (isUuid(requestedWorkspaceId)) {
-    const [workspace] = await db
-      .select({
-        id: workspaces.id,
-        name: workspaces.name,
-        plan: workspaces.plan,
-      })
-      .from(workspaces)
-      .where(eq(workspaces.id, requestedWorkspaceId))
-      .limit(1);
+    const workspace = await getWorkspaceById(requestedWorkspaceId);
 
     if (workspace) {
       return workspace;
     }
   }
 
-  const [latestWorkspace] = await db
-    .select({
-      id: workspaces.id,
-      name: workspaces.name,
-      plan: workspaces.plan,
-    })
-    .from(workspaces)
-    .orderBy(desc(workspaces.createdAt))
-    .limit(1);
+  const { workspace } = await getActiveWorkspaceContext();
 
-  return latestWorkspace ?? null;
+  return workspace;
 }
 
 export function workspaceQuerySuffix(workspace: StudioWorkspace | null) {

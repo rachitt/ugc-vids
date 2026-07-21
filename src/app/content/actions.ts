@@ -12,9 +12,10 @@ import {
   enqueueContentItemRender,
   type RenderableContentStatus,
 } from "@/lib/jobs/render-enqueue";
+import { getActiveWorkspaceContext } from "@/lib/workspaces";
 
 export async function generateContentBatchAction(formData: FormData) {
-  const workspaceId = getRequiredFormValue(formData, "workspaceId");
+  const { workspace } = await getActiveWorkspaceContext();
   const brandProfileId = getRequiredFormValue(formData, "brandProfileId");
   const totalCount = getOptionalNumber(formData, "totalCount") ?? 12;
   let generatedCount = 0;
@@ -24,7 +25,7 @@ export async function generateContentBatchAction(formData: FormData) {
     const result = await generateMixedContentBatch({
       brandProfileId,
       totalCount,
-      workspaceId,
+      workspaceId: workspace.id,
     });
 
     generatedCount = result.generatedCount;

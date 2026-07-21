@@ -38,6 +38,7 @@ export type GeneratedContentItem = Pick<
   | "script"
   | "status"
   | "updatedAt"
+  | "variantOf"
   | "videoUrl"
   | "workspaceId"
 >;
@@ -60,6 +61,7 @@ type GenerateContentItemsInput = {
   format: RenderableContentFormat;
   promptRecipe?: PromptRecipe;
   trendTemplateId?: string | null;
+  variantOfContentItemId?: string | null;
 };
 
 type ClaudeScript = {
@@ -143,10 +145,11 @@ export async function generateContentItems({
   format,
   promptRecipe,
   trendTemplateId,
+  variantOfContentItemId,
 }: GenerateContentItemsInput): Promise<GenerateContentItemsResult> {
   const requestedCount = clampScriptCount(count);
   const output = await runClaudeAgentTask<unknown>({
-    maxTurns: 1,
+    maxTurns: 3,
     outputSchema: buildContentScriptsSchema(format, requestedCount),
     prompt: buildContentGenerationPrompt(
       brandProfile,
@@ -181,6 +184,7 @@ export async function generateContentItems({
           script: scriptJson,
           status: "generated",
           trendTemplateId: trendTemplateId ?? null,
+          variantOf: variantOfContentItemId ?? null,
           workspaceId: brandProfile.workspaceId,
         })
         .returning({
@@ -193,6 +197,7 @@ export async function generateContentItems({
           script: contentItems.script,
           status: contentItems.status,
           updatedAt: contentItems.updatedAt,
+          variantOf: contentItems.variantOf,
           videoUrl: contentItems.videoUrl,
           workspaceId: contentItems.workspaceId,
         });

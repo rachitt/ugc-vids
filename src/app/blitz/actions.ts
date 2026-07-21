@@ -7,8 +7,8 @@ import {
   requestMoreGeneratedContent,
   saveContentItem,
 } from "@/lib/content/mutations";
-import { getActiveWorkspace } from "@/lib/content/queries";
 import type { ContentActionResult } from "@/lib/content/types";
+import { getActiveWorkspaceContext } from "@/lib/workspaces";
 
 export async function saveBlitzItem(
   contentItemId: string,
@@ -33,14 +33,7 @@ export async function rejectBlitzItem(
 }
 
 export async function requestMoreBlitzItems(): Promise<ContentActionResult> {
-  const workspace = await getActiveWorkspace();
-
-  if (!workspace) {
-    return {
-      ok: false,
-      error: "Create or seed a workspace before requesting more content.",
-    };
-  }
+  const { workspace } = await getActiveWorkspaceContext();
 
   const result = await requestMoreGeneratedContent(workspace.id);
 

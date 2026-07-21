@@ -1,10 +1,16 @@
+"use client";
+
+import { useState, useTransition } from "react";
 import {
   BarChart3,
   MousePointerClick,
+  Sparkles,
   TrendingUp,
   Users,
 } from "lucide-react";
 
+import { requestContentVariants } from "@/app/actions/variants";
+import { Button } from "@/components/ui/button";
 import {
   getContentFormatLabel,
   type ContentFormat,
@@ -43,6 +49,9 @@ export function AnalyticsDashboard({
   funnel,
   topContent,
 }: AnalyticsDashboardProps) {
+  const [messages, setMessages] = useState<Record<string, string>>({});
+  const [pendingItemId, setPendingItemId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
   const maxViews = Math.max(...topContent.map((item) => item.views), 1);
   const maxFunnel = Math.max(...funnel.map((step) => step.value), 1);
   const maxVisitors = Math.max(
@@ -57,6 +66,39 @@ export function AnalyticsDashboard({
     (total, item) => total + item.signups,
     0,
   );
+
+  function doubleDown(item: TopContentMetric) {
+    setPendingItemId(item.id);
+    setMessages((current) => ({
+      ...current,
+      [item.id]: "Requesting variants...",
+    }));
+
+    startTransition(() => {
+      void requestContentVariants({
+        contentItemId: item.id,
+        count: 3,
+        source: "manual",
+      })
+        .then((result) => {
+          setMessages((current) => ({
+            ...current,
+            [item.id]: result.ok
+              ? `${result.createdCount} variants queued - review in Blitz`
+              : result.error,
+          }));
+        })
+        .catch(() => {
+          setMessages((current) => ({
+            ...current,
+            [item.id]: "The variant request could not be recorded.",
+          }));
+        })
+        .finally(() => {
+          setPendingItemId((current) => (current === item.id ? null : current));
+        });
+    });
+  }
 
   return (
     <div className="grid gap-6">
@@ -115,6 +157,23 @@ export function AnalyticsDashboard({
                 <div className="flex gap-4 text-xs text-muted-foreground">
                   <span>{formatNumber(item.likes)} likes</span>
                   <span>{formatNumber(item.comments)} comments</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    disabled={isPending}
+                    onClick={() => doubleDown(item)}
+                    size="sm"
+                    type="button"
+                    variant="secondary"
+                  >
+                    <Sparkles className="size-4" aria-hidden="true" />
+                    {pendingItemId === item.id ? "Queueing" : "Double down"}
+                  </Button>
+                  {messages[item.id] ? (
+                    <p className="text-xs text-muted-foreground">
+                      {messages[item.id]}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             ))}
