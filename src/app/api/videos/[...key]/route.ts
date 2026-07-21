@@ -102,7 +102,7 @@ function workspaceIdFromKey(key: string) {
 
   if (
     segments.length < 4 ||
-    segments[0] !== "renders" ||
+    (segments[0] !== "renders" && segments[0] !== "captures") ||
     segments[1].length === 0 ||
     segments[2].length === 0
   ) {
@@ -172,7 +172,7 @@ function responseHeaders(video: StoredVideoStream) {
   const headers = new Headers({
     "Accept-Ranges": "bytes",
     "Content-Length": String(video.contentLength),
-    "Content-Type": "video/mp4",
+    "Content-Type": video.contentType ?? "application/octet-stream",
   });
 
   if (video.range) {

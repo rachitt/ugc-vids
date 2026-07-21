@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 import { generateMixedContentBatch } from "@/lib/content/batch";
+import { isRenderableContentFormat } from "@/lib/content/formats";
 import { getActiveWorkspaceContext } from "@/lib/workspaces";
 
 export const runtime = "nodejs";
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
     const { workspace } = await getActiveWorkspaceContext();
     const workspaceId = workspace.id;
     const requestedWorkspaceId = getString(body.workspaceId);
+    const requestedFormats = getRequestedFormats(body.requestedFormats);
 
     if (requestedWorkspaceId && requestedWorkspaceId !== workspaceId) {
       return NextResponse.json(
@@ -46,9 +48,22 @@ export async function POST(request: Request) {
       );
     }
 
+    if (
+      typeof body.requestedFormats !== "undefined" &&
+      requestedFormats.length === 0
+    ) {
+      return NextResponse.json(
+        { error: "requestedFormats must include a renderable format." },
+        { status: 400 },
+      );
+    }
+
     const result = await generateMixedContentBatch({
       brandProfileId,
-      totalCount: getNumber(body.totalCount) ?? 12,
+      formats: requestedFormats.length > 0 ? requestedFormats : undefined,
+      totalCount:
+        getNumber(body.totalCount) ??
+        (requestedFormats.length > 0 ? requestedFormats.length : 12),
       workspaceId,
     });
 
@@ -74,6 +89,14 @@ function getNumber(value: unknown) {
   }
 
   return Number.isFinite(value) ? value : undefined;
+}
+
+function getRequestedFormats(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter(isRenderableContentFormat);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -19,7 +19,7 @@ export type VideoByteRange = {
 };
 
 export type RenderedVideoUpload = {
-  contentType: "video/mp4";
+  contentType: "image/png" | "video/mp4";
   key: string;
   localPath: string;
 };
@@ -256,7 +256,7 @@ export class LocalVideoStorage implements RenderedVideoStorage {
       }
 
       return {
-        contentType: "video/mp4",
+        contentType: contentTypeForKey(normalizedKey),
         key: normalizedKey,
         lastModified: stats.mtime,
         size: stats.size,
@@ -413,12 +413,22 @@ function resolveStorageDriver(): VideoStorageDriver {
   return hasCompleteR2Config() ? "r2" : "local";
 }
 
+function contentTypeForKey(key: string) {
+  const extension = path.posix.extname(key).toLowerCase();
+
+  if (extension === ".png") {
+    return "image/png";
+  }
+
+  return "video/mp4";
+}
+
 function hasCompleteR2Config() {
   return Boolean(
     envValue("CLOUDFLARE_ACCOUNT_ID") &&
-      envValue("R2_ACCESS_KEY_ID") &&
-      envValue("R2_SECRET_ACCESS_KEY") &&
-      envValue("R2_BUCKET_NAME"),
+    envValue("R2_ACCESS_KEY_ID") &&
+    envValue("R2_SECRET_ACCESS_KEY") &&
+    envValue("R2_BUCKET_NAME"),
   );
 }
 
@@ -464,7 +474,9 @@ function toNodeReadableStream(body: unknown): Readable {
   throw new Error("Storage object body is not streamable.");
 }
 
-function isWebReadableStream(body: unknown): body is ReadableStream<Uint8Array> {
+function isWebReadableStream(
+  body: unknown,
+): body is ReadableStream<Uint8Array> {
   return (
     typeof body === "object" &&
     body !== null &&

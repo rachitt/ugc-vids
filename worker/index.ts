@@ -2,6 +2,7 @@ import "dotenv/config";
 
 import { Worker } from "bullmq";
 
+import { captureBrandProfileSite } from "../src/lib/brand/site-captures";
 import {
   getRedisConnectionOptions,
   renderQueueName,
@@ -59,14 +60,30 @@ const renderWorker = new Worker<RenderJobData>(
 const scrapeWorker = new Worker<ScrapeJobData>(
   scrapeQueueName,
   async (job) => {
-    console.info("Scrape worker received stub job", {
+    if (job.name !== "capture") {
+      console.info("Scrape worker received stub job", {
+        brandProfileId: job.data.brandProfileId,
+        jobId: job.id,
+        name: job.name,
+        url: job.data.url,
+      });
+
+      return {
+        scrapeStatus: "stubbed",
+      };
+    }
+
+    console.info("Scrape worker received capture job", {
       brandProfileId: job.data.brandProfileId,
       jobId: job.id,
       url: job.data.url,
     });
 
+    const captures = await captureBrandProfileSite(job.data);
+
     return {
-      scrapeStatus: "stubbed",
+      captureCount: captures.length,
+      scrapeStatus: "captured",
     };
   },
   { connection },

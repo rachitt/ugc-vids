@@ -23,6 +23,15 @@ export type BrandProfileScrapedPage = {
   status: number;
 };
 
+export type BrandProfileSiteCapture = {
+  key: string;
+  url: string;
+  label: string;
+  viewport: "mobile" | "desktop";
+  width: number;
+  height: number;
+};
+
 export const workspacePlan = pgEnum("workspace_plan", [
   "free",
   "starter",
@@ -211,6 +220,7 @@ export const brandProfiles = pgTable(
       .$type<BrandProfileScrapedPage[]>()
       .notNull()
       .default(sql`'[]'::jsonb`),
+    siteCaptures: jsonb("site_captures").$type<BrandProfileSiteCapture[]>(),
     productDesc: text("product_desc"),
     audience: text("audience"),
     tone: text("tone"),

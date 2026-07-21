@@ -5,6 +5,7 @@ import { desc } from "drizzle-orm";
 
 import { Button } from "@/components/ui/button";
 import { StudioNav } from "@/components/studio/StudioNav";
+import { getAssetById } from "@/lib/assets/manifest";
 import { db } from "@/lib/db";
 import { humanUgcClips } from "@/lib/db/schema";
 
@@ -51,39 +52,51 @@ function uniqueTags(clips: ClipRow[], key: "styleTags" | "genderTags") {
 }
 
 function ClipPreview({ clip }: { clip: ClipRow }) {
-  if (clip.clipUrl.startsWith("data:image/")) {
+  const clipUrl = resolveClipUrl(clip.clipUrl);
+
+  if (clipUrl.startsWith("data:image/")) {
     return (
       <Image
         alt="UGC clip placeholder preview"
         className="aspect-video w-full object-cover"
         height={360}
         unoptimized
-        src={clip.clipUrl}
+        src={clipUrl}
         width={640}
       />
     );
   }
 
   if (
-    clip.clipUrl.startsWith("data:video/") ||
-    clip.clipUrl.startsWith("/") ||
-    clip.clipUrl.endsWith(".mp4")
+    clipUrl.startsWith("data:video/") ||
+    clipUrl.startsWith("/") ||
+    clipUrl.endsWith(".mp4")
   ) {
     return (
       <video
         className="aspect-video w-full bg-muted object-cover"
         controls
         muted
-        src={clip.clipUrl}
+        src={clipUrl}
       />
     );
   }
 
   return (
     <div className="grid aspect-video place-items-center bg-muted px-4 text-center text-sm text-muted-foreground">
-      {clip.clipUrl}
+      {clipUrl}
     </div>
   );
+}
+
+function resolveClipUrl(clipUrl: string) {
+  if (!clipUrl.startsWith("asset:")) {
+    return clipUrl;
+  }
+
+  const asset = getAssetById(clipUrl.replace("asset:", ""));
+
+  return asset ? `/${asset.file}` : clipUrl;
 }
 
 function FilterSelect({

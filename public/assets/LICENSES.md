@@ -91,3 +91,18 @@ All assets bundled in `public/assets/` with their source and license.
 - `fonts/Inter-{Regular,Bold,Black}.woff2` — Inter v4.1 — https://github.com/rsms/inter
 - `fonts/Anton-Regular.ttf` — https://github.com/google/fonts/tree/main/ofl/anton
 - `fonts/ArchivoBlack-Regular.ttf` — https://github.com/google/fonts/tree/main/ofl/archivoblack
+
+## UGC hook clips (assets/ugc)
+
+All from Mixkit (https://mixkit.co/license/#videoFree), Mixkit Free Video License — free for commercial use, no attribution required. Cropped to 720x1280, trimmed <=8s, audio stripped.
+
+- ugc-01: mixkit.co video 42323 (portrait of an influencer talking to the camera)
+- ugc-02: video 24012 (expressive young man making a video blog)
+- ugc-03: video 41272 (youtuber vlogging in his studio)
+- ugc-04: video 5497 (tech vlogger reminds people to subscribe)
+- ugc-05: video 4834 (therapist in his office talking to the camera)
+- ugc-06: video 24228 (blonde woman talking at a conference)
+- ugc-07: video 45503 (man on blue background points at himself in surprise)
+- ugc-08: video 32842 (portrait of an excited woman on blue background)
+- ugc-09: video 4508 (surprised man with hands on head)
+- ugc-10: video 32844 (surprised young woman covers her mouth)

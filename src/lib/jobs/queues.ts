@@ -11,10 +11,12 @@ export type RenderJobData = {
   workspaceId: string;
 };
 
-export type ScrapeJobData = {
+export type CaptureJobData = {
   brandProfileId: string;
   url: string;
 };
+
+export type ScrapeJobData = CaptureJobData;
 
 export function getRedisConnectionOptions(): RedisOptions {
   const redisUrl = new URL(process.env.REDIS_URL ?? "redis://localhost:6379");

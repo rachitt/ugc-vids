@@ -77,6 +77,16 @@ const GreenscreenMemeSchema = z.object({
 const HookDemoSchema = z.object({
   hook: z.string().min(1),
   subhook: z.string().optional(),
+  ugcClip: AssetSchema.optional(),
+  captures: z
+    .array(
+      z.object({
+        src: z.string().min(1),
+        label: z.string().min(1),
+      }),
+    )
+    .max(6)
+    .optional(),
   shots: z
     .array(
       z.object({
@@ -117,7 +127,10 @@ export const RemotionPropsSchema = z
     hookDemo: HookDemoSchema.optional(),
   })
   .superRefine((props, context) => {
-    const requiredByFormat: Record<RenderableContentFormat, keyof typeof props> = {
+    const requiredByFormat: Record<
+      RenderableContentFormat,
+      keyof typeof props
+    > = {
       greenscreen_meme: "greenscreenMeme",
       hook_demo: "hookDemo",
       slideshow: "slideshow",

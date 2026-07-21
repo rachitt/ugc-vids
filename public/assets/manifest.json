@@ -694,5 +694,126 @@
         "waving"
       ]
     }
+  ],
+  "ugcClips": [
+    {
+      "id": "ugc/ugc-01",
+      "file": "assets/ugc/ugc-01.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "woman",
+      "tags": [
+        "studio",
+        "influencer"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-02",
+      "file": "assets/ugc/ugc-02.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "man",
+      "tags": [
+        "energetic",
+        "vlog"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-03",
+      "file": "assets/ugc/ugc-03.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "man",
+      "tags": [
+        "studio",
+        "youtuber"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-04",
+      "file": "assets/ugc/ugc-04.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "man",
+      "tags": [
+        "desk",
+        "tech"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-05",
+      "file": "assets/ugc/ugc-05.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "man",
+      "tags": [
+        "professional",
+        "office"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-06",
+      "file": "assets/ugc/ugc-06.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "woman",
+      "tags": [
+        "professional",
+        "conference"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-07",
+      "file": "assets/ugc/ugc-07.mp4",
+      "kind": "video",
+      "role": "reaction",
+      "gender": "man",
+      "tags": [
+        "pointing",
+        "surprise"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-08",
+      "file": "assets/ugc/ugc-08.mp4",
+      "kind": "video",
+      "role": "reaction",
+      "gender": "woman",
+      "tags": [
+        "excited",
+        "bluebg"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-09",
+      "file": "assets/ugc/ugc-09.mp4",
+      "kind": "video",
+      "role": "reaction",
+      "gender": "man",
+      "tags": [
+        "shocked"
+      ],
+      "durationSec": 6.0
+    },
+    {
+      "id": "ugc/ugc-10",
+      "file": "assets/ugc/ugc-10.mp4",
+      "kind": "video",
+      "role": "reaction",
+      "gender": "woman",
+      "tags": [
+        "shocked",
+        "covers-mouth"
+      ],
+      "durationSec": 5.1
+    }
   ]
 }

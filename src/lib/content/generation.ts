@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { runClaudeAgentTask } from "../ai/agent";
 import {
   fnv1a,
@@ -7,19 +9,21 @@ import {
   type GradientAsset,
   type ManifestAsset,
   type MusicAsset,
+  type UgcClipAsset,
 } from "../assets/manifest";
 import { db } from "../db";
-import { brandProfiles, contentItems } from "../db/schema";
+import {
+  brandProfiles,
+  contentItems,
+  type BrandProfileSiteCapture,
+} from "../db/schema";
 import type { PromptRecipe } from "../trends/metadata";
 import {
   type RemotionProps,
   type RemotionTheme,
   validateRemotionProps,
 } from "../video/remotion-props";
-import {
-  contentFormatLabels,
-  type RenderableContentFormat,
-} from "./formats";
+import { contentFormatLabels, type RenderableContentFormat } from "./formats";
 
 export type BrandProfileRow = typeof brandProfiles.$inferSelect;
 export type ContentItemRow = typeof contentItems.$inferSelect;
@@ -128,7 +132,10 @@ const FORMAT_RECIPES: Record<RenderableContentFormat, string[]> = {
   ],
 };
 
-const MUSIC_MOOD_BY_FORMAT: Record<RenderableContentFormat, MusicAsset["mood"]> = {
+const MUSIC_MOOD_BY_FORMAT: Record<
+  RenderableContentFormat,
+  MusicAsset["mood"]
+> = {
   greenscreen_meme: "upbeat",
   hook_demo: "epic",
   slideshow: "upbeat",
@@ -137,6 +144,9 @@ const MUSIC_MOOD_BY_FORMAT: Record<RenderableContentFormat, MusicAsset["mood"]> 
 
 const IMAGE_BROLL_ASSETS = manifest.broll.filter(
   (asset): asset is BrollAsset & { kind: "image" } => asset.kind === "image",
+);
+const UGC_VIDEO_ASSETS = manifest.ugcClips.filter(
+  (asset): asset is UgcClipAsset => asset.kind === "video",
 );
 
 export async function generateContentItems({
@@ -167,11 +177,13 @@ export async function generateContentItems({
   for (let index = 0; index < rawScripts.length; index += 1) {
     try {
       const script = normalizeClaudeScript(rawScripts[index], format);
+      const contentItemId = randomUUID();
       const remotionProps = mapScriptToRemotionProps(
         brandProfile,
         format,
         script,
         index,
+        contentItemId,
       );
       const scriptJson = mapScriptToContentItemScript(format, script);
       const [item] = await db
@@ -179,6 +191,7 @@ export async function generateContentItems({
         .values({
           brandProfileId: brandProfile.id,
           format,
+          id: contentItemId,
           renderStatus: "idle",
           remotionProps: remotionProps as unknown as Record<string, unknown>,
           script: scriptJson,
@@ -260,9 +273,7 @@ function buildContentGenerationPrompt(
     "- hook: primary on-screen hook",
     "- caption: post caption without hashtags",
     "- hashtags: 4-8 relevant hashtags",
-    format === "slideshow"
-      ? "- slides: 3-5 short slide captions"
-      : null,
+    format === "slideshow" ? "- slides: 3-5 short slide captions" : null,
     format === "wall_of_text"
       ? "- body: 3-5 newline-separated lines for the dense text block"
       : null,
@@ -344,13 +355,7 @@ function buildContentScriptsSchema(
           type: "string",
         },
       },
-      required: [
-        "hook",
-        "memeCaption",
-        "reactionLabel",
-        "caption",
-        "hashtags",
-      ],
+      required: ["hook", "memeCaption", "reactionLabel", "caption", "hashtags"],
       type: "object",
     },
     hook_demo: {
@@ -386,14 +391,7 @@ function buildContentScriptsSchema(
           type: "string",
         },
       },
-      required: [
-        "hook",
-        "subhook",
-        "demoSteps",
-        "cta",
-        "caption",
-        "hashtags",
-      ],
+      required: ["hook", "subhook", "demoSteps", "cta", "caption", "hashtags"],
       type: "object",
     },
     slideshow: {
@@ -515,6 +513,7 @@ function mapScriptToRemotionProps(
   format: RenderableContentFormat,
   script: NormalizedScript,
   itemIndex: number,
+  contentItemId: string,
 ): RemotionProps {
   const brand = buildRemotionBrand(brandProfile);
   const theme = buildRemotionTheme(brandProfile.colors);
@@ -562,11 +561,15 @@ function mapScriptToRemotionProps(
           reactionLabel: trimText(script.reactionLabel ?? "Relatable", 42),
         },
       });
-    case "hook_demo":
+    case "hook_demo": {
+      const captures = hookDemoCaptures(brandProfile);
+      const ugcClip = hookDemoUgcClip(script.hook, contentItemId);
+
       return validateRemotionProps({
         ...common,
         durationInFrames: 390,
         hookDemo: {
+          ...(captures.length > 0 ? { captures } : {}),
           cta: trimText(script.cta ?? "Try this angle in your next short", 68),
           hook: trimText(script.hook, 82),
           shots: script.demoSteps.slice(0, 4).map((step, index) => ({
@@ -584,8 +587,10 @@ function mapScriptToRemotionProps(
             script.subhook ?? "Here is the product moment to show.",
             90,
           ),
+          ...(ugcClip ? { ugcClip } : {}),
         },
       });
+    }
     case "slideshow":
       return validateRemotionProps({
         ...common,
@@ -612,7 +617,10 @@ function mapScriptToRemotionProps(
           accent: theme.secondary,
         },
         wallOfText: {
-          body: script.lines.slice(0, 5).map((line) => trimText(line, 92)).join("\n"),
+          body: script.lines
+            .slice(0, 5)
+            .map((line) => trimText(line, 92))
+            .join("\n"),
           broll: [
             {
               label: firstNicheTag(brandProfile) ?? "Customer proof",
@@ -656,9 +664,10 @@ function mapScriptToContentItemScript(
   if (format === "greenscreen_meme") {
     return {
       ...base,
-      lines: [script.memeCaption ?? script.hook, script.reactionLabel ?? ""].filter(
-        Boolean,
-      ),
+      lines: [
+        script.memeCaption ?? script.hook,
+        script.reactionLabel ?? "",
+      ].filter(Boolean),
     };
   }
 
@@ -820,6 +829,56 @@ function getStringArray(value: unknown, maxItems: number) {
   return items.slice(0, maxItems);
 }
 
+function hookDemoUgcClip(hook: string, contentItemId: string) {
+  const preferredRole = preferredUgcRole(hook);
+  const preferredPool = UGC_VIDEO_ASSETS.filter(
+    (asset) => asset.role === preferredRole,
+  );
+  const selected =
+    pickAsset(preferredPool, contentItemId) ??
+    pickAsset(UGC_VIDEO_ASSETS, contentItemId);
+
+  if (!selected) {
+    return undefined;
+  }
+
+  return {
+    label: `${selected.role} UGC clip`,
+    src: assetUri(selected, "placeholder:persona"),
+  };
+}
+
+function preferredUgcRole(hook: string): UgcClipAsset["role"] {
+  const normalized = hook.toLowerCase();
+
+  return /\bpov\b|\bme\s|\bwhen\s/u.test(normalized) ? "reaction" : "talking";
+}
+
+function hookDemoCaptures(brandProfile: BrandProfileRow) {
+  const captures = brandProfile.siteCaptures ?? [];
+
+  return [...captures]
+    .filter(isUsableSiteCapture)
+    .sort((left, right) => {
+      if (left.viewport === right.viewport) {
+        return 0;
+      }
+
+      return left.viewport === "mobile" ? -1 : 1;
+    })
+    .slice(0, 4)
+    .map((capture) => ({
+      label: capture.label,
+      src: capture.url || `/api/videos/${capture.key}`,
+    }));
+}
+
+function isUsableSiteCapture(
+  capture: BrandProfileSiteCapture,
+): capture is BrandProfileSiteCapture {
+  return Boolean(capture.key && capture.label && (capture.url || capture.key));
+}
+
 function assetSeed(
   brandProfileId: BrandProfileRow["id"],
   format: RenderableContentFormat,
@@ -915,7 +974,10 @@ function trimText(input: string, maxLength: number) {
 }
 
 function cleanText(input: string) {
-  return input.replace(/^[-*\d.]+\s*/, "").replace(/\s+/g, " ").trim();
+  return input
+    .replace(/^[-*\d.]+\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function hostnameFromUrl(url: string) {

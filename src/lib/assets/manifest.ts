@@ -29,6 +29,16 @@ export type BrollAsset = {
   durationSec?: number;
 };
 
+export type UgcClipAsset = {
+  id: string;
+  file: string;
+  kind: "video";
+  role: "talking" | "reaction";
+  gender: string;
+  tags: string[];
+  durationSec: number;
+};
+
 export type PersonaAsset = {
   id: string;
   file: string;
@@ -40,6 +50,7 @@ export type AssetManifest = {
   memeBackgrounds: MemeBackgroundAsset[];
   gradients: GradientAsset[];
   broll: BrollAsset[];
+  ugcClips: UgcClipAsset[];
   personas: PersonaAsset[];
 };
 
@@ -48,6 +59,7 @@ export type ManifestAsset =
   | MemeBackgroundAsset
   | GradientAsset
   | BrollAsset
+  | UgcClipAsset
   | PersonaAsset;
 
 export const manifest = rawManifest as AssetManifest;
@@ -58,6 +70,7 @@ const assetById = new Map<string, ManifestAsset>(
     ...manifest.memeBackgrounds,
     ...manifest.gradients,
     ...manifest.broll,
+    ...manifest.ugcClips,
     ...manifest.personas,
   ].map((asset) => [asset.id, asset]),
 );
