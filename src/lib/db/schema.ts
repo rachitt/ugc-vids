@@ -24,6 +24,7 @@ export type BrandProfileScrapedPage = {
 };
 
 export type BrandProfileSiteCapture = {
+  kind?: "image" | "video";
   key: string;
   url: string;
   label: string;

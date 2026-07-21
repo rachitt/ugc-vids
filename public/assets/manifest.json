@@ -814,6 +814,470 @@
         "covers-mouth"
       ],
       "durationSec": 5.1
+    },
+    {
+      "id": "ugc/ugc-11",
+      "file": "assets/ugc/ugc-11.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "woman",
+      "tags": [
+        "fitness",
+        "tutorial",
+        "influencer"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-12",
+      "file": "assets/ugc/ugc-12.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "man",
+      "tags": [
+        "studio",
+        "vlog",
+        "tech"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-13",
+      "file": "assets/ugc/ugc-13.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "man",
+      "tags": [
+        "vlog",
+        "camera"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-14",
+      "file": "assets/ugc/ugc-14.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "man",
+      "tags": [
+        "vlog",
+        "outdoors"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-15",
+      "file": "assets/ugc/ugc-15.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "man",
+      "tags": [
+        "coffee",
+        "outdoors",
+        "casual"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-16",
+      "file": "assets/ugc/ugc-16.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "woman",
+      "tags": [
+        "coffee",
+        "cafe",
+        "casual"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-17",
+      "file": "assets/ugc/ugc-17.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "woman",
+      "tags": [
+        "coffee",
+        "cafe",
+        "casual"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-18",
+      "file": "assets/ugc/ugc-18.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "woman",
+      "tags": [
+        "videocall",
+        "coffee",
+        "home"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-19",
+      "file": "assets/ugc/ugc-19.mp4",
+      "kind": "video",
+      "role": "talking",
+      "gender": "woman",
+      "tags": [
+        "podcast",
+        "coffee",
+        "studio"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-20",
+      "file": "assets/ugc/ugc-20.mp4",
+      "kind": "video",
+      "role": "lifestyle",
+      "gender": "man",
+      "tags": [
+        "money",
+        "finance",
+        "counting"
+      ],
+      "durationSec": 7.2
+    },
+    {
+      "id": "ugc/ugc-21",
+      "file": "assets/ugc/ugc-21.mp4",
+      "kind": "video",
+      "role": "lifestyle",
+      "gender": "man",
+      "tags": [
+        "money",
+        "finance",
+        "closeup"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-22",
+      "file": "assets/ugc/ugc-22.mp4",
+      "kind": "video",
+      "role": "routine",
+      "gender": "woman",
+      "tags": [
+        "skincare",
+        "beauty"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-23",
+      "file": "assets/ugc/ugc-23.mp4",
+      "kind": "video",
+      "role": "routine",
+      "gender": "woman",
+      "tags": [
+        "skincare",
+        "beauty",
+        "model"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-24",
+      "file": "assets/ugc/ugc-24.mp4",
+      "kind": "video",
+      "role": "routine",
+      "gender": "woman",
+      "tags": [
+        "skincare",
+        "beauty",
+        "eyepatch"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-25",
+      "file": "assets/ugc/ugc-25.mp4",
+      "kind": "video",
+      "role": "routine",
+      "gender": "woman",
+      "tags": [
+        "skincare",
+        "bathroom",
+        "mirror"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-26",
+      "file": "assets/ugc/ugc-26.mp4",
+      "kind": "video",
+      "role": "routine",
+      "gender": "man",
+      "tags": [
+        "skincare",
+        "mirror",
+        "grooming"
+      ],
+      "durationSec": 5.5
+    },
+    {
+      "id": "ugc/ugc-27",
+      "file": "assets/ugc/ugc-27.mp4",
+      "kind": "video",
+      "role": "routine",
+      "gender": "woman",
+      "tags": [
+        "skincare",
+        "facemask"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-28",
+      "file": "assets/ugc/ugc-28.mp4",
+      "kind": "video",
+      "role": "lifestyle",
+      "gender": "woman",
+      "tags": [
+        "cooking",
+        "kitchen",
+        "breakfast"
+      ],
+      "durationSec": 7.8
+    },
+    {
+      "id": "ugc/ugc-29",
+      "file": "assets/ugc/ugc-29.mp4",
+      "kind": "video",
+      "role": "lifestyle",
+      "gender": "woman",
+      "tags": [
+        "cooking",
+        "kitchen",
+        "smoothie",
+        "health"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-30",
+      "file": "assets/ugc/ugc-30.mp4",
+      "kind": "video",
+      "role": "lifestyle",
+      "gender": "woman",
+      "tags": [
+        "kitchen",
+        "dancing",
+        "fun"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-31",
+      "file": "assets/ugc/ugc-31.mp4",
+      "kind": "video",
+      "role": "lifestyle",
+      "gender": "woman",
+      "tags": [
+        "coffee",
+        "kitchen",
+        "cheerful"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-32",
+      "file": "assets/ugc/ugc-32.mp4",
+      "kind": "video",
+      "role": "lifestyle",
+      "gender": "woman",
+      "tags": [
+        "kitchen",
+        "phone",
+        "texting"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-33",
+      "file": "assets/ugc/ugc-33.mp4",
+      "kind": "video",
+      "role": "selfie",
+      "gender": "woman",
+      "tags": [
+        "selfie",
+        "social",
+        "friends"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-34",
+      "file": "assets/ugc/ugc-34.mp4",
+      "kind": "video",
+      "role": "selfie",
+      "gender": "woman",
+      "tags": [
+        "selfie",
+        "home",
+        "cozy"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-35",
+      "file": "assets/ugc/ugc-35.mp4",
+      "kind": "video",
+      "role": "selfie",
+      "gender": "woman",
+      "tags": [
+        "selfie",
+        "shopping",
+        "fashion"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-36",
+      "file": "assets/ugc/ugc-36.mp4",
+      "kind": "video",
+      "role": "selfie",
+      "gender": "woman",
+      "tags": [
+        "selfie",
+        "coffee",
+        "cafe"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-37",
+      "file": "assets/ugc/ugc-37.mp4",
+      "kind": "video",
+      "role": "selfie",
+      "gender": "woman",
+      "tags": [
+        "selfie",
+        "urban",
+        "street"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-38",
+      "file": "assets/ugc/ugc-38.mp4",
+      "kind": "video",
+      "role": "selfie",
+      "gender": "woman",
+      "tags": [
+        "selfie",
+        "rain",
+        "moody"
+      ],
+      "durationSec": 5.3
+    },
+    {
+      "id": "ugc/ugc-39",
+      "file": "assets/ugc/ugc-39.mp4",
+      "kind": "video",
+      "role": "lifestyle",
+      "gender": "woman",
+      "tags": [
+        "friends",
+        "nightout",
+        "fun"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-40",
+      "file": "assets/ugc/ugc-40.mp4",
+      "kind": "video",
+      "role": "lifestyle",
+      "gender": "woman",
+      "tags": [
+        "student",
+        "laptop",
+        "study"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-41",
+      "file": "assets/ugc/ugc-41.mp4",
+      "kind": "video",
+      "role": "lifestyle",
+      "gender": "woman",
+      "tags": [
+        "student",
+        "laptop",
+        "home"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-42",
+      "file": "assets/ugc/ugc-42.mp4",
+      "kind": "video",
+      "role": "lifestyle",
+      "gender": "woman",
+      "tags": [
+        "work",
+        "laptop",
+        "kitchen"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-43",
+      "file": "assets/ugc/ugc-43.mp4",
+      "kind": "video",
+      "role": "reaction",
+      "gender": "mixed",
+      "tags": [
+        "unboxing",
+        "package",
+        "couple"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-44",
+      "file": "assets/ugc/ugc-44.mp4",
+      "kind": "video",
+      "role": "lifestyle",
+      "gender": "man",
+      "tags": [
+        "phone",
+        "scrolling",
+        "social"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-45",
+      "file": "assets/ugc/ugc-45.mp4",
+      "kind": "video",
+      "role": "demo",
+      "gender": "neutral",
+      "tags": [
+        "phone",
+        "greenscreen",
+        "hand"
+      ],
+      "durationSec": 8.0
+    },
+    {
+      "id": "ugc/ugc-46",
+      "file": "assets/ugc/ugc-46.mp4",
+      "kind": "video",
+      "role": "reaction",
+      "gender": "woman",
+      "tags": [
+        "excited",
+        "fun"
+      ],
+      "durationSec": 8.0
     }
   ]
 }

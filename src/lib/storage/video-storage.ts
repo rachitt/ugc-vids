@@ -19,7 +19,7 @@ export type VideoByteRange = {
 };
 
 export type RenderedVideoUpload = {
-  contentType: "image/png" | "video/mp4";
+  contentType: "image/png" | "video/mp4" | "video/webm";
   key: string;
   localPath: string;
 };
@@ -418,6 +418,10 @@ function contentTypeForKey(key: string) {
 
   if (extension === ".png") {
     return "image/png";
+  }
+
+  if (extension === ".webm") {
+    return "video/webm";
   }
 
   return "video/mp4";

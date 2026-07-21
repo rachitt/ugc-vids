@@ -81,6 +81,7 @@ test("creates capture-backed hook demo props in fake scrape mode", async ({
 
   expect(ugcClipSrc).toMatch(/^asset:ugc\/ugc-\d{2}$/);
   expect(hookDemo.captures.length).toBeGreaterThanOrEqual(1);
+  expect(hookDemo.captures[0]).toMatchObject({ kind: "image" });
 });
 
 async function deleteTestRows() {

@@ -563,7 +563,11 @@ function mapScriptToRemotionProps(
       });
     case "hook_demo": {
       const captures = hookDemoCaptures(brandProfile);
-      const ugcClip = hookDemoUgcClip(script.hook, contentItemId);
+      const ugcClip = hookDemoUgcClip({
+        contentItemId,
+        hook: script.hook,
+        nicheTags: brandProfile.nicheTags,
+      });
 
       return validateRemotionProps({
         ...common,
@@ -829,14 +833,29 @@ function getStringArray(value: unknown, maxItems: number) {
   return items.slice(0, maxItems);
 }
 
-function hookDemoUgcClip(hook: string, contentItemId: string) {
+function hookDemoUgcClip({
+  contentItemId,
+  hook,
+  nicheTags,
+}: {
+  contentItemId: string;
+  hook: string;
+  nicheTags: string[];
+}) {
+  if (UGC_VIDEO_ASSETS.length === 0) {
+    return undefined;
+  }
+
   const preferredRole = preferredUgcRole(hook);
-  const preferredPool = UGC_VIDEO_ASSETS.filter(
-    (asset) => asset.role === preferredRole,
-  );
-  const selected =
-    pickAsset(preferredPool, contentItemId) ??
-    pickAsset(UGC_VIDEO_ASSETS, contentItemId);
+  const scoredAssets = UGC_VIDEO_ASSETS.map((asset) => ({
+    asset,
+    score: scoreUgcClip(asset, nicheTags, preferredRole),
+  }));
+  const topScore = Math.max(...scoredAssets.map(({ score }) => score));
+  const topPool = scoredAssets
+    .filter(({ score }) => score === topScore)
+    .map(({ asset }) => asset);
+  const selected = pickAsset(topPool, contentItemId);
 
   if (!selected) {
     return undefined;
@@ -844,11 +863,75 @@ function hookDemoUgcClip(hook: string, contentItemId: string) {
 
   return {
     label: `${selected.role} UGC clip`,
+    role: selected.role,
     src: assetUri(selected, "placeholder:persona"),
   };
 }
 
-function preferredUgcRole(hook: string): UgcClipAsset["role"] {
+function scoreUgcClip(
+  asset: UgcClipAsset,
+  nicheTags: string[],
+  preferredRole: ReturnType<typeof preferredUgcRole>,
+) {
+  const normalizedNicheTags = nicheTags
+    .map(normalizeUgcMatchToken)
+    .filter(Boolean);
+  const tagScore = asset.tags.reduce(
+    (score, tag) =>
+      score +
+      normalizedNicheTags.filter((nicheTag) =>
+        ugcTagsMatch(normalizeUgcMatchToken(tag), nicheTag),
+      ).length *
+        2,
+    0,
+  );
+
+  return tagScore + (asset.role === preferredRole ? 1 : 0);
+}
+
+function normalizeUgcMatchToken(input: string) {
+  return input
+    .replace(/^#+/, "")
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function ugcTagsMatch(left: string, right: string) {
+  if (!left || !right) {
+    return false;
+  }
+
+  return singularishUgcTag(left).some((leftVariant) =>
+    singularishUgcTag(right).some(
+      (rightVariant) =>
+        leftVariant.includes(rightVariant) ||
+        rightVariant.includes(leftVariant),
+    ),
+  );
+}
+
+function singularishUgcTag(input: string) {
+  const variants = new Set([input]);
+
+  if (input.endsWith("ies") && input.length > 4) {
+    variants.add(`${input.slice(0, -3)}y`);
+  }
+
+  if (input.endsWith("es") && input.length > 3) {
+    variants.add(input.slice(0, -2));
+  }
+
+  if (input.endsWith("s") && input.length > 3) {
+    variants.add(input.slice(0, -1));
+  }
+
+  return [...variants];
+}
+
+function preferredUgcRole(
+  hook: string,
+): Extract<UgcClipAsset["role"], "reaction" | "talking"> {
   const normalized = hook.toLowerCase();
 
   return /\bpov\b|\bme\s|\bwhen\s/u.test(normalized) ? "reaction" : "talking";
@@ -860,6 +943,13 @@ function hookDemoCaptures(brandProfile: BrandProfileRow) {
   return [...captures]
     .filter(isUsableSiteCapture)
     .sort((left, right) => {
+      const leftKind = left.kind ?? "image";
+      const rightKind = right.kind ?? "image";
+
+      if (leftKind !== rightKind) {
+        return leftKind === "video" ? -1 : 1;
+      }
+
       if (left.viewport === right.viewport) {
         return 0;
       }
@@ -868,6 +958,7 @@ function hookDemoCaptures(brandProfile: BrandProfileRow) {
     })
     .slice(0, 4)
     .map((capture) => ({
+      kind: capture.kind ?? "image",
       label: capture.label,
       src: capture.url || `/api/videos/${capture.key}`,
     }));

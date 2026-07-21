@@ -2,6 +2,7 @@ import { mkdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
+import type { Browser } from "@playwright/test";
 import { eq } from "drizzle-orm";
 
 import { db } from "../db";
@@ -15,6 +16,7 @@ export type CaptureBrandProfileSiteInput = {
 
 type CaptureSpec = {
   height: number;
+  kind: "image" | "video";
   label: string;
   localPath: string;
   viewport: BrandProfileSiteCapture["viewport"];
@@ -34,6 +36,7 @@ const CAPTURE_NAVIGATION_TIMEOUT_MS = 30_000;
 const fakeCaptureFixtures = [
   {
     height: MOBILE_VIEWPORT.height,
+    kind: "image",
     label: "Mobile hero",
     localPath: path.join(
       process.cwd(),
@@ -44,6 +47,7 @@ const fakeCaptureFixtures = [
   },
   {
     height: MOBILE_VIEWPORT.height,
+    kind: "image",
     label: "Mobile scroll",
     localPath: path.join(
       process.cwd(),
@@ -54,6 +58,7 @@ const fakeCaptureFixtures = [
   },
   {
     height: DESKTOP_VIEWPORT.height,
+    kind: "image",
     label: "Desktop hero",
     localPath: path.join(
       process.cwd(),
@@ -155,6 +160,7 @@ async function captureLiveSiteScreenshots(
       });
       specs.push({
         height: MOBILE_VIEWPORT.height,
+        kind: "image",
         label,
         localPath,
         viewport: "mobile",
@@ -163,6 +169,16 @@ async function captureLiveSiteScreenshots(
     }
 
     await mobileContext.close();
+
+    const scrollVideoSpec = await captureLiveSiteScrollVideo({
+      browser,
+      outputDir,
+      url,
+    });
+
+    if (scrollVideoSpec) {
+      specs.unshift(scrollVideoSpec);
+    }
 
     const desktopContext = await browser.newContext({
       deviceScaleFactor: 1,
@@ -188,6 +204,7 @@ async function captureLiveSiteScreenshots(
     });
     specs.push({
       height: DESKTOP_VIEWPORT.height,
+      kind: "image",
       label: "Desktop hero",
       localPath,
       viewport: "desktop",
@@ -202,6 +219,113 @@ async function captureLiveSiteScreenshots(
   return specs;
 }
 
+async function captureLiveSiteScrollVideo({
+  browser,
+  outputDir,
+  url,
+}: {
+  browser: Browser;
+  outputDir: string;
+  url: string;
+}): Promise<CaptureSpec | null> {
+  let contextClosed = false;
+  const context = await browser.newContext({
+    deviceScaleFactor: 1,
+    hasTouch: true,
+    isMobile: true,
+    recordVideo: {
+      dir: outputDir,
+      size: MOBILE_VIEWPORT,
+    },
+    viewport: MOBILE_VIEWPORT,
+  });
+
+  try {
+    const page = await context.newPage();
+
+    await page.goto(url, {
+      timeout: CAPTURE_NAVIGATION_TIMEOUT_MS,
+      waitUntil: "domcontentloaded",
+    });
+    await page.waitForLoadState("load", { timeout: 8_000 }).catch(() => {
+      // DOM content plus a short settle is enough for a useful recording.
+    });
+    await page.waitForTimeout(1_000);
+    // Passed as a source string: tsx/esbuild compiles function-form evaluate
+    // args with injected helpers (e.g. __name) that don't exist in the page.
+    await page.evaluate(`(() => {
+      const durationMs = 6000;
+      const viewportHeights = 3;
+
+      return new Promise((resolve) => {
+        const startY = window.scrollY;
+        const maxScrollY = Math.max(
+          0,
+          document.documentElement.scrollHeight - window.innerHeight,
+        );
+        const targetY = Math.min(
+          maxScrollY,
+          startY + window.innerHeight * viewportHeights,
+        );
+
+        if (targetY <= startY) {
+          resolve(undefined);
+          return;
+        }
+
+        const startedAt = performance.now();
+        const easeInOut = (progress) =>
+          progress < 0.5
+            ? 2 * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+        const step = (now) => {
+          const progress = Math.min(1, (now - startedAt) / durationMs);
+
+          window.scrollTo(0, startY + (targetY - startY) * easeInOut(progress));
+
+          if (progress < 1) {
+            requestAnimationFrame(step);
+            return;
+          }
+
+          resolve(undefined);
+        };
+
+        requestAnimationFrame(step);
+      });
+    })()`);
+
+    const video = page.video();
+    await context.close();
+    contextClosed = true;
+
+    if (!video) {
+      return null;
+    }
+
+    return {
+      height: MOBILE_VIEWPORT.height,
+      kind: "video",
+      label: "Mobile scroll recording",
+      localPath: await video.path(),
+      viewport: "mobile",
+      width: MOBILE_VIEWPORT.width,
+    };
+  } catch (error) {
+    console.warn("Site scroll video capture failed; continuing with images.", {
+      error,
+    });
+    return null;
+  } finally {
+    if (!contextClosed) {
+      await context.close().catch(() => {
+        // Ignore cleanup errors after a best-effort video capture failure.
+      });
+    }
+  }
+}
+
 async function storeCapture({
   brandProfileId,
   spec,
@@ -213,20 +337,28 @@ async function storeCapture({
   storage: ReturnType<typeof createVideoStorageFromEnv>;
   workspaceId: string;
 }): Promise<BrandProfileSiteCapture> {
+  const kind = spec.kind ?? "image";
+  const extension = kind === "video" ? "webm" : "png";
+  const contentType = kind === "video" ? "video/webm" : "image/png";
+  const fileName =
+    kind === "video"
+      ? `scroll-${Date.now()}.${extension}`
+      : `${slugify(spec.label)}-${Date.now()}.${extension}`;
   const key = [
     "captures",
     safePathSegment(workspaceId),
     safePathSegment(brandProfileId),
-    `${slugify(spec.label)}-${Date.now()}.png`,
+    fileName,
   ].join("/");
   const upload = await storage.put({
-    contentType: "image/png",
+    contentType,
     key,
     localPath: spec.localPath,
   });
 
   return {
     height: spec.height,
+    kind,
     key: upload.key,
     label: spec.label,
     url: upload.url,

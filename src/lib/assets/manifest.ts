@@ -33,7 +33,7 @@ export type UgcClipAsset = {
   id: string;
   file: string;
   kind: "video";
-  role: "talking" | "reaction";
+  role: "talking" | "reaction" | "selfie" | "routine" | "lifestyle" | "demo";
   gender: string;
   tags: string[];
   durationSec: number;

@@ -35,10 +35,12 @@ import { parseCompositionProps } from "./props";
 const TARGET_HOOK_FRAMES = 75;
 const FALLBACK_BPM = 120;
 const MAX_DEMO_SHOTS = 4;
-const MIN_CTA_FRAMES = 54;
+const MIN_CTA_FRAMES = 45;
+const MAX_CTA_FRAMES = 60;
 const VIDEO_EXTENSION_PATTERN = /\.(mp4|webm|mov)(?:[?#].*)?$/i;
 const HOOK_CAPTION_START_FRAME = 4;
 const HOOK_CAPTION_MAX_CONTENT_WIDTH = 900;
+const HOOK_SUBHOOK_BOTTOM = BOTTOM_SAFE + 156;
 
 type HookDemoData = NonNullable<RemotionProps["hookDemo"]>;
 type HookDemoShot = HookDemoData["shots"][number];
@@ -265,10 +267,7 @@ function getHookCutFrame({
   durationInFrames: number;
   fps: number;
 }): number {
-  const ctaFrames = Math.min(
-    Math.max(MIN_CTA_FRAMES, Math.round(durationInFrames * 0.2)),
-    Math.max(18, durationInFrames - 42),
-  );
+  const ctaFrames = getCtaFrameBudget(durationInFrames);
   const latestHookCut = Math.max(24, durationInFrames - ctaFrames - 42);
   const targetFrame = Math.min(TARGET_HOOK_FRAMES, latestHookCut);
   const snapped = snapToBeat(
@@ -286,9 +285,16 @@ function getTransitionFrames(beatTiming: BeatTiming): number {
   return clamp(Math.round(beatTiming.framesPerBeat * 0.55), 6, 10);
 }
 
+function getCtaFrameBudget(durationInFrames: number): number {
+  return Math.min(
+    MAX_CTA_FRAMES,
+    Math.max(MIN_CTA_FRAMES, Math.round(durationInFrames * 0.16)),
+  );
+}
+
 function getCtaFrames(durationInFrames: number, hookCutFrame: number): number {
   return Math.min(
-    Math.max(MIN_CTA_FRAMES, Math.round(durationInFrames * 0.2)),
+    getCtaFrameBudget(durationInFrames),
     Math.max(18, durationInFrames - hookCutFrame - 36),
   );
 }
@@ -331,7 +337,7 @@ function getActiveShotIndex(localFrame: number, starts: number[]): number {
 }
 
 function isVideoSource(src: string): boolean {
-  return VIDEO_EXTENSION_PATTERN.test(src);
+  return VIDEO_EXTENSION_PATTERN.test(src) || /^data:video\//iu.test(src);
 }
 
 function formatStepLabel(label: string | undefined, index: number): string {
@@ -346,6 +352,25 @@ function isDesktopCapture(capture: HookDemoCapture): boolean {
   const marker = `${capture.label} ${capture.src}`.toLowerCase();
 
   return marker.includes("desktop");
+}
+
+function isVideoCapture(capture: HookDemoCapture): boolean {
+  return capture.kind === "video" || isVideoSource(capture.src);
+}
+
+function ugcHookStickerLabel({
+  role,
+}: NonNullable<HookDemoData["ugcClip"]>): string | null {
+  switch (role) {
+    case "reaction":
+      return "REAL REACTION";
+    case "talking":
+      return "CREATOR TAKE";
+    case "selfie":
+      return "POV";
+    default:
+      return null;
+  }
 }
 
 function HookCard({
@@ -488,7 +513,7 @@ function HookCard({
       {subhook ? (
         <div
           style={{
-            bottom: BOTTOM_SAFE + 86,
+            bottom: HOOK_SUBHOOK_BOTTOM,
             color: "rgba(255,255,255,0.88)",
             fontSize: 34,
             fontWeight: 800,
@@ -568,6 +593,7 @@ function UgcHookClip({
       extrapolateRight: "clamp",
     },
   );
+  const stickerLabel = ugcHookStickerLabel(ugcClip);
 
   return (
     <AbsoluteFill
@@ -615,28 +641,30 @@ function UgcHookClip({
       />
       <GrainOverlay opacity={0.11} size={180} />
 
-      <div
-        style={{
-          left: 72,
-          opacity: 1 - exitProgress,
-          position: "absolute",
-          top: TOP_SAFE + 24,
-          transform: `translateX(${-exitProgress * 140}px)`,
-        }}
-      >
-        <StickerChip
-          background={theme.accent}
-          color={theme.background}
-          rotationDeg={-4}
-          startFrame={0}
+      {stickerLabel ? (
+        <div
           style={{
-            fontSize: 27,
-            padding: "15px 22px",
+            left: 72,
+            opacity: 1 - exitProgress,
+            position: "absolute",
+            top: TOP_SAFE + 24,
+            transform: `translateX(${-exitProgress * 140}px)`,
           }}
         >
-          Real reaction
-        </StickerChip>
-      </div>
+          <StickerChip
+            background={theme.accent}
+            color={theme.background}
+            rotationDeg={-4}
+            startFrame={0}
+            style={{
+              fontSize: 27,
+              padding: "15px 22px",
+            }}
+          >
+            {stickerLabel}
+          </StickerChip>
+        </div>
+      ) : null}
 
       <WordCaptions
         color="#ffffff"
@@ -668,7 +696,7 @@ function UgcHookClip({
       {subhook ? (
         <div
           style={{
-            bottom: BOTTOM_SAFE + 86,
+            bottom: HOOK_SUBHOOK_BOTTOM,
             color: "rgba(255,255,255,0.9)",
             fontSize: 34,
             fontWeight: 850,
@@ -702,6 +730,7 @@ function CaptureMedia({
     label: capture.label,
     src: capture.src,
   });
+  const videoCapture = isVideoCapture(capture);
   const mediaProgress = clamp(localFrame / Math.max(1, shotDuration), 0, 1);
   const desktop = isDesktopCapture(capture);
   const scale = desktop
@@ -713,6 +742,25 @@ function CaptureMedia({
         extrapolateLeft: "clamp",
         extrapolateRight: "clamp",
       });
+
+  if (videoCapture) {
+    return (
+      <Video
+        loop
+        muted
+        playsInline
+        src={src}
+        style={{
+          background: "#020617",
+          filter: "saturate(1.04) contrast(1.02)",
+          height: "100%",
+          objectFit: "cover",
+          width: "100%",
+        }}
+        volume={0}
+      />
+    );
+  }
 
   return (
     <Img
@@ -798,8 +846,17 @@ function DemoShots({
   });
   const shotIndex = getActiveShotIndex(frame, starts);
   const shot = shots[shotIndex];
+  const videoCapture = captures.find(isVideoCapture);
+  const imageCaptures = captures.filter((capture) => !isVideoCapture(capture));
   const capture =
-    captures.length > 0 ? captures[shotIndex % captures.length] : undefined;
+    shotIndex === 0 && videoCapture
+      ? videoCapture
+      : imageCaptures.length > 0
+        ? imageCaptures[
+            (videoCapture ? Math.max(0, shotIndex - 1) : shotIndex) %
+              imageCaptures.length
+          ]
+        : undefined;
   const shotStart = starts[shotIndex] ?? 0;
   const nextShotStart = starts[shotIndex + 1] ?? demoFrames;
   const shotDuration = Math.max(1, nextShotStart - shotStart);
@@ -1335,7 +1392,7 @@ export function HookDemo(inputProps: RemotionProps) {
   const ctaFrames = getCtaFrames(durationInFrames, hookCutFrame);
   const mainSequenceFrames = durationInFrames - hookCutFrame;
   const shots = hookDemo.shots.slice(0, MAX_DEMO_SHOTS);
-  const captures = hookDemo.captures?.slice(0, MAX_DEMO_SHOTS) ?? [];
+  const captures = hookDemo.captures?.slice(0, MAX_DEMO_SHOTS + 1) ?? [];
   const cta = hookDemo.cta ?? "Save this demo flow";
 
   return (
