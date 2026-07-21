@@ -6,9 +6,11 @@ import type { Route } from "next";
 import { eq } from "drizzle-orm";
 
 import { analyzeBrandProfile } from "@/lib/brand/analysis";
+import { captureBrandProfileSite } from "@/lib/brand/site-captures";
 import { normalizeWebsiteUrl, scrapeBrandWebsite } from "@/lib/brand/scraper";
 import { db } from "@/lib/db";
 import { brandProfiles } from "@/lib/db/schema";
+import { enqueueBrandProfileCapture } from "@/lib/jobs/capture-enqueue";
 import {
   getOrCreateDefaultWorkspace,
   setActiveWorkspaceAction,
@@ -64,6 +66,27 @@ export async function createBrandProfileAction(formData: FormData) {
     }
 
     profileId = profile.id;
+
+    try {
+      if (process.env.FASTLANE_FAKE_SCRAPE === "1") {
+        // Fixture captures need no browser and no worker; running them inline
+        // keeps fake mode (CI, e2e) self-contained.
+        await captureBrandProfileSite({
+          brandProfileId: profile.id,
+          url: scrape.rootUrl,
+        });
+      } else {
+        await enqueueBrandProfileCapture({
+          brandProfileId: profile.id,
+          url: scrape.rootUrl,
+        });
+      }
+    } catch (error) {
+      console.warn("Could not capture brand profile site.", {
+        brandProfileId: profile.id,
+        error,
+      });
+    }
   } catch (error) {
     redirect(`/?error=${encodeURIComponent(toActionErrorMessage(error))}`);
   }

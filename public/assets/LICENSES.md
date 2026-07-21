@@ -91,3 +91,56 @@ All assets bundled in `public/assets/` with their source and license.
 - `fonts/Inter-{Regular,Bold,Black}.woff2` — Inter v4.1 — https://github.com/rsms/inter
 - `fonts/Anton-Regular.ttf` — https://github.com/google/fonts/tree/main/ofl/anton
 - `fonts/ArchivoBlack-Regular.ttf` — https://github.com/google/fonts/tree/main/ofl/archivoblack
+
+## UGC hook clips (assets/ugc)
+
+All from Mixkit (https://mixkit.co/license/#videoFree), Mixkit Free Video License — free for commercial use, no attribution required. Cropped to 720x1280, trimmed <=8s, audio stripped.
+
+- ugc-01: mixkit.co video 42323 (portrait of an influencer talking to the camera)
+- ugc-02: video 24012 (expressive young man making a video blog)
+- ugc-03: video 41272 (youtuber vlogging in his studio)
+- ugc-04: video 5497 (tech vlogger reminds people to subscribe)
+- ugc-05: video 4834 (therapist in his office talking to the camera)
+- ugc-06: video 24228 (blonde woman talking at a conference)
+- ugc-07: video 45503 (man on blue background points at himself in surprise)
+- ugc-08: video 32842 (portrait of an excited woman on blue background)
+- ugc-09: video 4508 (surprised man with hands on head)
+- ugc-10: video 32844 (surprised young woman covers her mouth)
+
+### Batch 2 (ugc-11..ugc-46), same Mixkit Free Video License, same processing:
+- ugc/ugc-11: mixkit.co video 5053
+- ugc/ugc-12: mixkit.co video 5512
+- ugc/ugc-13: mixkit.co video 23485
+- ugc/ugc-14: mixkit.co video 46352
+- ugc/ugc-15: mixkit.co video 34246
+- ugc/ugc-16: mixkit.co video 41815
+- ugc/ugc-17: mixkit.co video 41814
+- ugc/ugc-18: mixkit.co video 39812
+- ugc/ugc-19: mixkit.co video 52177
+- ugc/ugc-20: mixkit.co video 49438
+- ugc/ugc-21: mixkit.co video 18296
+- ugc/ugc-22: mixkit.co video 12843
+- ugc/ugc-23: mixkit.co video 15907
+- ugc/ugc-24: mixkit.co video 51184
+- ugc/ugc-25: mixkit.co video 51178
+- ugc/ugc-26: mixkit.co video 50756
+- ugc/ugc-27: mixkit.co video 51186
+- ugc/ugc-28: mixkit.co video 42907
+- ugc/ugc-29: mixkit.co video 4589
+- ugc/ugc-30: mixkit.co video 32146
+- ugc/ugc-31: mixkit.co video 43394
+- ugc/ugc-32: mixkit.co video 4820
+- ugc/ugc-33: mixkit.co video 9136
+- ugc/ugc-34: mixkit.co video 43382
+- ugc/ugc-35: mixkit.co video 23794
+- ugc/ugc-36: mixkit.co video 43253
+- ugc/ugc-37: mixkit.co video 43187
+- ugc/ugc-38: mixkit.co video 28095
+- ugc/ugc-39: mixkit.co video 42299
+- ugc/ugc-40: mixkit.co video 21389
+- ugc/ugc-41: mixkit.co video 48676
+- ugc/ugc-42: mixkit.co video 4867
+- ugc/ugc-43: mixkit.co video 42122
+- ugc/ugc-44: mixkit.co video 8789
+- ugc/ugc-45: mixkit.co video 36800
+- ugc/ugc-46: mixkit.co video 22610

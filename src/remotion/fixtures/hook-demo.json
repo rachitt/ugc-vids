@@ -23,6 +23,23 @@
     "hook": "Still guessing which content brings qualified leads?",
     "subhook": "Here is the three-screen workflow that fixes it.",
     "cta": "Export this angle for TikTok, Reels, and Shorts",
+    "ugcClip": {
+      "src": "asset:ugc/ugc-01",
+      "label": "Talking UGC hook",
+      "role": "talking"
+    },
+    "captures": [
+      {
+        "kind": "image",
+        "src": "asset:gradients/gradient-01",
+        "label": "Mobile hero"
+      },
+      {
+        "kind": "image",
+        "src": "asset:gradients/gradient-07",
+        "label": "Desktop hero"
+      }
+    ],
     "shots": [
       {
         "image": {

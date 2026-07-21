@@ -35,13 +35,16 @@ import { parseCompositionProps } from "./props";
 const TARGET_HOOK_FRAMES = 75;
 const FALLBACK_BPM = 120;
 const MAX_DEMO_SHOTS = 4;
-const MIN_CTA_FRAMES = 54;
+const MIN_CTA_FRAMES = 45;
+const MAX_CTA_FRAMES = 60;
 const VIDEO_EXTENSION_PATTERN = /\.(mp4|webm|mov)(?:[?#].*)?$/i;
 const HOOK_CAPTION_START_FRAME = 4;
 const HOOK_CAPTION_MAX_CONTENT_WIDTH = 900;
+const HOOK_SUBHOOK_BOTTOM = BOTTOM_SAFE + 156;
 
 type HookDemoData = NonNullable<RemotionProps["hookDemo"]>;
 type HookDemoShot = HookDemoData["shots"][number];
+type HookDemoCapture = NonNullable<HookDemoData["captures"]>[number];
 
 type RgbColor = {
   b: number;
@@ -112,9 +115,7 @@ function relativeLuminance(color: string): number | null {
   const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((channel) => {
     const value = channel / 255;
 
-    return value <= 0.03928
-      ? value / 12.92
-      : ((value + 0.055) / 1.055) ** 2.4;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
   });
 
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
@@ -266,10 +267,7 @@ function getHookCutFrame({
   durationInFrames: number;
   fps: number;
 }): number {
-  const ctaFrames = Math.min(
-    Math.max(MIN_CTA_FRAMES, Math.round(durationInFrames * 0.2)),
-    Math.max(18, durationInFrames - 42),
-  );
+  const ctaFrames = getCtaFrameBudget(durationInFrames);
   const latestHookCut = Math.max(24, durationInFrames - ctaFrames - 42);
   const targetFrame = Math.min(TARGET_HOOK_FRAMES, latestHookCut);
   const snapped = snapToBeat(
@@ -287,9 +285,16 @@ function getTransitionFrames(beatTiming: BeatTiming): number {
   return clamp(Math.round(beatTiming.framesPerBeat * 0.55), 6, 10);
 }
 
+function getCtaFrameBudget(durationInFrames: number): number {
+  return Math.min(
+    MAX_CTA_FRAMES,
+    Math.max(MIN_CTA_FRAMES, Math.round(durationInFrames * 0.16)),
+  );
+}
+
 function getCtaFrames(durationInFrames: number, hookCutFrame: number): number {
   return Math.min(
-    Math.max(MIN_CTA_FRAMES, Math.round(durationInFrames * 0.2)),
+    getCtaFrameBudget(durationInFrames),
     Math.max(18, durationInFrames - hookCutFrame - 36),
   );
 }
@@ -332,7 +337,7 @@ function getActiveShotIndex(localFrame: number, starts: number[]): number {
 }
 
 function isVideoSource(src: string): boolean {
-  return VIDEO_EXTENSION_PATTERN.test(src);
+  return VIDEO_EXTENSION_PATTERN.test(src) || /^data:video\//iu.test(src);
 }
 
 function formatStepLabel(label: string | undefined, index: number): string {
@@ -341,6 +346,31 @@ function formatStepLabel(label: string | undefined, index: number): string {
   }
 
   return `Step ${index + 1}`;
+}
+
+function isDesktopCapture(capture: HookDemoCapture): boolean {
+  const marker = `${capture.label} ${capture.src}`.toLowerCase();
+
+  return marker.includes("desktop");
+}
+
+function isVideoCapture(capture: HookDemoCapture): boolean {
+  return capture.kind === "video" || isVideoSource(capture.src);
+}
+
+function ugcHookStickerLabel({
+  role,
+}: NonNullable<HookDemoData["ugcClip"]>): string | null {
+  switch (role) {
+    case "reaction":
+      return "REAL REACTION";
+    case "talking":
+      return "CREATOR TAKE";
+    case "selfie":
+      return "POV";
+    default:
+      return null;
+  }
 }
 
 function HookCard({
@@ -483,7 +513,7 @@ function HookCard({
       {subhook ? (
         <div
           style={{
-            bottom: BOTTOM_SAFE + 86,
+            bottom: HOOK_SUBHOOK_BOTTOM,
             color: "rgba(255,255,255,0.88)",
             fontSize: 34,
             fontWeight: 800,
@@ -504,15 +534,270 @@ function HookCard({
   );
 }
 
+function UgcHookClip({
+  beatTiming,
+  hook,
+  hookCutFrame,
+  subhook,
+  theme,
+  transitionFrames,
+  ugcClip,
+}: {
+  beatTiming: BeatTiming;
+  hook: string;
+  hookCutFrame: number;
+  subhook: string | undefined;
+  theme: RemotionTheme;
+  transitionFrames: number;
+  ugcClip: NonNullable<HookDemoData["ugcClip"]>;
+}) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const src = resolveMediaSrc(ugcClip);
+  const exitProgress = interpolate(
+    frame,
+    [hookCutFrame, hookCutFrame + transitionFrames],
+    [0, 1],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
+  const pulseBeat = snapToBeat(
+    frame,
+    beatTiming.bpm,
+    fps,
+    beatTiming.downbeatOffsetSec,
+    "floor",
+  );
+  const beatPulse = spring({
+    config: {
+      damping: 18,
+      stiffness: 170,
+    },
+    fps,
+    frame: frame - pulseBeat,
+  });
+  const words = countWords(hook);
+  const wordsPerSecond = clamp(
+    words / Math.max(0.7, (hookCutFrame - 6) / fps),
+    2.6,
+    5.4,
+  );
+  const subhookOpacity = interpolate(
+    frame,
+    [Math.max(14, hookCutFrame - 30), hookCutFrame - 10],
+    [0, 1],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
+  const stickerLabel = ugcHookStickerLabel(ugcClip);
+
+  return (
+    <AbsoluteFill
+      style={{
+        background: "#030712",
+        color: theme.foreground,
+        fontFamily: remotionFontFamily,
+        overflow: "hidden",
+      }}
+    >
+      <Video
+        loop
+        muted
+        playsInline
+        src={src}
+        style={{
+          filter: "saturate(1.08) contrast(1.04)",
+          height: "100%",
+          objectFit: "cover",
+          transform: `scale(${1.015 + Math.min(1, beatPulse) * 0.012})`,
+          width: "100%",
+        }}
+        volume={0}
+      />
+      <div
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.36) 0%, rgba(0,0,0,0.06) 34%, rgba(0,0,0,0.2) 66%, rgba(0,0,0,0.68) 100%)",
+          inset: 0,
+          position: "absolute",
+        }}
+      />
+      <div
+        style={{
+          background: theme.accent,
+          borderRadius: 999,
+          bottom: 210,
+          filter: "blur(28px)",
+          height: 260,
+          opacity: 0.2,
+          position: "absolute",
+          right: -110,
+          width: 260,
+        }}
+      />
+      <GrainOverlay opacity={0.11} size={180} />
+
+      {stickerLabel ? (
+        <div
+          style={{
+            left: 72,
+            opacity: 1 - exitProgress,
+            position: "absolute",
+            top: TOP_SAFE + 24,
+            transform: `translateX(${-exitProgress * 140}px)`,
+          }}
+        >
+          <StickerChip
+            background={theme.accent}
+            color={theme.background}
+            rotationDeg={-4}
+            startFrame={0}
+            style={{
+              fontSize: 27,
+              padding: "15px 22px",
+            }}
+          >
+            {stickerLabel}
+          </StickerChip>
+        </div>
+      ) : null}
+
+      <WordCaptions
+        color="#ffffff"
+        fontFamily={`${ARCHIVO_BLACK_FONT_FAMILY}, ${remotionFontFamily}`}
+        fontSize={108}
+        holdLastPageUntilFrame={hookCutFrame}
+        highlightColor={theme.accent}
+        highlightMode="background"
+        maxContentWidth={HOOK_CAPTION_MAX_CONTENT_WIDTH}
+        maxLines={2}
+        scrimStyle={{
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.5), rgba(0,0,0,0.24))",
+          border: "1px solid rgba(255,255,255,0.18)",
+          boxShadow: "0 24px 70px rgba(0,0,0,0.5)",
+          inset: "-20px -28px",
+        }}
+        showScrim
+        startFrame={HOOK_CAPTION_START_FRAME}
+        style={{
+          opacity: 1 - exitProgress * 0.35,
+          top: -26,
+        }}
+        text={hook}
+        textShadow="0 3px 10px rgba(0,0,0,0.78), 0 18px 44px rgba(0,0,0,0.68)"
+        wordsPerSecond={wordsPerSecond}
+      />
+
+      {subhook ? (
+        <div
+          style={{
+            bottom: HOOK_SUBHOOK_BOTTOM,
+            color: "rgba(255,255,255,0.9)",
+            fontSize: 34,
+            fontWeight: 850,
+            left: 84,
+            lineHeight: 1.08,
+            maxWidth: 780,
+            opacity: subhookOpacity * (1 - exitProgress),
+            position: "absolute",
+            right: RIGHT_SAFE + 50,
+            textShadow: "0 8px 22px rgba(0,0,0,0.52)",
+            transform: `translateY(${(1 - subhookOpacity) * 18}px)`,
+          }}
+        >
+          {subhook}
+        </div>
+      ) : null}
+    </AbsoluteFill>
+  );
+}
+
+function CaptureMedia({
+  capture,
+  localFrame,
+  shotDuration,
+}: {
+  capture: HookDemoCapture;
+  localFrame: number;
+  shotDuration: number;
+}) {
+  const src = resolveMediaSrc({
+    label: capture.label,
+    src: capture.src,
+  });
+  const videoCapture = isVideoCapture(capture);
+  const mediaProgress = clamp(localFrame / Math.max(1, shotDuration), 0, 1);
+  const desktop = isDesktopCapture(capture);
+  const scale = desktop
+    ? interpolate(mediaProgress, [0, 1], [1.015, 1.075])
+    : interpolate(mediaProgress, [0, 1], [1.015, 1.055]);
+  const y = desktop
+    ? 0
+    : interpolate(mediaProgress, [0, 1], [18, -72], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      });
+
+  if (videoCapture) {
+    return (
+      <Video
+        loop
+        muted
+        playsInline
+        src={src}
+        style={{
+          background: "#020617",
+          filter: "saturate(1.04) contrast(1.02)",
+          height: "100%",
+          objectFit: "cover",
+          width: "100%",
+        }}
+        volume={0}
+      />
+    );
+  }
+
+  return (
+    <Img
+      src={src}
+      style={{
+        background: desktop ? "#f8fafc" : "#020617",
+        filter: "saturate(1.03) contrast(1.02)",
+        height: "100%",
+        objectFit: desktop ? "contain" : "cover",
+        transform: `translateY(${y}px) scale(${scale})`,
+        width: "100%",
+      }}
+    />
+  );
+}
+
 function ShotMedia({
   asset,
+  capture,
   localFrame,
   shotDuration,
 }: {
   asset: HookDemoShot["image"];
+  capture?: HookDemoCapture;
   localFrame: number;
   shotDuration: number;
 }) {
+  if (capture) {
+    return (
+      <CaptureMedia
+        capture={capture}
+        localFrame={localFrame}
+        shotDuration={shotDuration}
+      />
+    );
+  }
+
   const src = resolveMediaSrc(asset);
   const mediaProgress = clamp(localFrame / Math.max(1, shotDuration), 0, 1);
   const scale = interpolate(mediaProgress, [0, 1], [1.035, 1.11]);
@@ -537,6 +822,7 @@ function ShotMedia({
 
 function DemoShots({
   beatTiming,
+  captures,
   demoFrames,
   fallbackTitle,
   hookCutFrame,
@@ -544,6 +830,7 @@ function DemoShots({
   theme,
 }: {
   beatTiming: BeatTiming;
+  captures: HookDemoCapture[];
   demoFrames: number;
   fallbackTitle: string;
   hookCutFrame: number;
@@ -559,6 +846,17 @@ function DemoShots({
   });
   const shotIndex = getActiveShotIndex(frame, starts);
   const shot = shots[shotIndex];
+  const videoCapture = captures.find(isVideoCapture);
+  const imageCaptures = captures.filter((capture) => !isVideoCapture(capture));
+  const capture =
+    shotIndex === 0 && videoCapture
+      ? videoCapture
+      : imageCaptures.length > 0
+        ? imageCaptures[
+            (videoCapture ? Math.max(0, shotIndex - 1) : shotIndex) %
+              imageCaptures.length
+          ]
+        : undefined;
   const shotStart = starts[shotIndex] ?? 0;
   const nextShotStart = starts[shotIndex + 1] ?? demoFrames;
   const shotDuration = Math.max(1, nextShotStart - shotStart);
@@ -662,7 +960,9 @@ function DemoShots({
               textTransform: "uppercase",
             }}
           >
-            {shot.image.label ?? formatStepLabel(shot.label, shotIndex)}
+            {capture?.label ??
+              shot.image.label ??
+              formatStepLabel(shot.label, shotIndex)}
           </div>
           <div
             style={{
@@ -700,6 +1000,7 @@ function DemoShots({
         >
           <ShotMedia
             asset={shot.image}
+            capture={capture}
             localFrame={shotLocalFrame}
             shotDuration={shotDuration}
           />
@@ -913,6 +1214,7 @@ function EndCtaCard({
 
 function MainScene({
   beatTiming,
+  captures,
   cta,
   ctaFrames,
   hookCutFrame,
@@ -921,6 +1223,7 @@ function MainScene({
   theme,
 }: {
   beatTiming: BeatTiming;
+  captures: HookDemoCapture[];
   cta: string;
   ctaFrames: number;
   hookCutFrame: number;
@@ -947,6 +1250,7 @@ function MainScene({
   return (
     <DemoShots
       beatTiming={beatTiming}
+      captures={captures}
       demoFrames={demoFrames}
       fallbackTitle={props.title}
       hookCutFrame={hookCutFrame}
@@ -1088,6 +1392,7 @@ export function HookDemo(inputProps: RemotionProps) {
   const ctaFrames = getCtaFrames(durationInFrames, hookCutFrame);
   const mainSequenceFrames = durationInFrames - hookCutFrame;
   const shots = hookDemo.shots.slice(0, MAX_DEMO_SHOTS);
+  const captures = hookDemo.captures?.slice(0, MAX_DEMO_SHOTS + 1) ?? [];
   const cta = hookDemo.cta ?? "Save this demo flow";
 
   return (
@@ -1105,14 +1410,26 @@ export function HookDemo(inputProps: RemotionProps) {
       />
       <TransitionSeries>
         <TransitionSeries.Sequence durationInFrames={hookSequenceFrames}>
-          <HookCard
-            beatTiming={beatTiming}
-            hook={hookDemo.hook}
-            hookCutFrame={hookCutFrame}
-            subhook={hookDemo.subhook}
-            theme={theme}
-            transitionFrames={transitionFrames}
-          />
+          {hookDemo.ugcClip ? (
+            <UgcHookClip
+              beatTiming={beatTiming}
+              hook={hookDemo.hook}
+              hookCutFrame={hookCutFrame}
+              subhook={hookDemo.subhook}
+              theme={theme}
+              transitionFrames={transitionFrames}
+              ugcClip={hookDemo.ugcClip}
+            />
+          ) : (
+            <HookCard
+              beatTiming={beatTiming}
+              hook={hookDemo.hook}
+              hookCutFrame={hookCutFrame}
+              subhook={hookDemo.subhook}
+              theme={theme}
+              transitionFrames={transitionFrames}
+            />
+          )}
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={slide({ direction: "from-right" })}
@@ -1124,6 +1441,7 @@ export function HookDemo(inputProps: RemotionProps) {
         <TransitionSeries.Sequence durationInFrames={mainSequenceFrames}>
           <MainScene
             beatTiming={beatTiming}
+            captures={captures}
             cta={cta}
             ctaFrames={ctaFrames}
             hookCutFrame={hookCutFrame}

@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { runClaudeAgentTask } from "../ai/agent";
 import {
   fnv1a,
@@ -7,19 +9,21 @@ import {
   type GradientAsset,
   type ManifestAsset,
   type MusicAsset,
+  type UgcClipAsset,
 } from "../assets/manifest";
 import { db } from "../db";
-import { brandProfiles, contentItems } from "../db/schema";
+import {
+  brandProfiles,
+  contentItems,
+  type BrandProfileSiteCapture,
+} from "../db/schema";
 import type { PromptRecipe } from "../trends/metadata";
 import {
   type RemotionProps,
   type RemotionTheme,
   validateRemotionProps,
 } from "../video/remotion-props";
-import {
-  contentFormatLabels,
-  type RenderableContentFormat,
-} from "./formats";
+import { contentFormatLabels, type RenderableContentFormat } from "./formats";
 
 export type BrandProfileRow = typeof brandProfiles.$inferSelect;
 export type ContentItemRow = typeof contentItems.$inferSelect;
@@ -128,7 +132,10 @@ const FORMAT_RECIPES: Record<RenderableContentFormat, string[]> = {
   ],
 };
 
-const MUSIC_MOOD_BY_FORMAT: Record<RenderableContentFormat, MusicAsset["mood"]> = {
+const MUSIC_MOOD_BY_FORMAT: Record<
+  RenderableContentFormat,
+  MusicAsset["mood"]
+> = {
   greenscreen_meme: "upbeat",
   hook_demo: "epic",
   slideshow: "upbeat",
@@ -137,6 +144,9 @@ const MUSIC_MOOD_BY_FORMAT: Record<RenderableContentFormat, MusicAsset["mood"]> 
 
 const IMAGE_BROLL_ASSETS = manifest.broll.filter(
   (asset): asset is BrollAsset & { kind: "image" } => asset.kind === "image",
+);
+const UGC_VIDEO_ASSETS = manifest.ugcClips.filter(
+  (asset): asset is UgcClipAsset => asset.kind === "video",
 );
 
 export async function generateContentItems({
@@ -167,11 +177,13 @@ export async function generateContentItems({
   for (let index = 0; index < rawScripts.length; index += 1) {
     try {
       const script = normalizeClaudeScript(rawScripts[index], format);
+      const contentItemId = randomUUID();
       const remotionProps = mapScriptToRemotionProps(
         brandProfile,
         format,
         script,
         index,
+        contentItemId,
       );
       const scriptJson = mapScriptToContentItemScript(format, script);
       const [item] = await db
@@ -179,6 +191,7 @@ export async function generateContentItems({
         .values({
           brandProfileId: brandProfile.id,
           format,
+          id: contentItemId,
           renderStatus: "idle",
           remotionProps: remotionProps as unknown as Record<string, unknown>,
           script: scriptJson,
@@ -260,9 +273,7 @@ function buildContentGenerationPrompt(
     "- hook: primary on-screen hook",
     "- caption: post caption without hashtags",
     "- hashtags: 4-8 relevant hashtags",
-    format === "slideshow"
-      ? "- slides: 3-5 short slide captions"
-      : null,
+    format === "slideshow" ? "- slides: 3-5 short slide captions" : null,
     format === "wall_of_text"
       ? "- body: 3-5 newline-separated lines for the dense text block"
       : null,
@@ -344,13 +355,7 @@ function buildContentScriptsSchema(
           type: "string",
         },
       },
-      required: [
-        "hook",
-        "memeCaption",
-        "reactionLabel",
-        "caption",
-        "hashtags",
-      ],
+      required: ["hook", "memeCaption", "reactionLabel", "caption", "hashtags"],
       type: "object",
     },
     hook_demo: {
@@ -386,14 +391,7 @@ function buildContentScriptsSchema(
           type: "string",
         },
       },
-      required: [
-        "hook",
-        "subhook",
-        "demoSteps",
-        "cta",
-        "caption",
-        "hashtags",
-      ],
+      required: ["hook", "subhook", "demoSteps", "cta", "caption", "hashtags"],
       type: "object",
     },
     slideshow: {
@@ -515,6 +513,7 @@ function mapScriptToRemotionProps(
   format: RenderableContentFormat,
   script: NormalizedScript,
   itemIndex: number,
+  contentItemId: string,
 ): RemotionProps {
   const brand = buildRemotionBrand(brandProfile);
   const theme = buildRemotionTheme(brandProfile.colors);
@@ -562,11 +561,19 @@ function mapScriptToRemotionProps(
           reactionLabel: trimText(script.reactionLabel ?? "Relatable", 42),
         },
       });
-    case "hook_demo":
+    case "hook_demo": {
+      const captures = hookDemoCaptures(brandProfile);
+      const ugcClip = hookDemoUgcClip({
+        contentItemId,
+        hook: script.hook,
+        nicheTags: brandProfile.nicheTags,
+      });
+
       return validateRemotionProps({
         ...common,
         durationInFrames: 390,
         hookDemo: {
+          ...(captures.length > 0 ? { captures } : {}),
           cta: trimText(script.cta ?? "Try this angle in your next short", 68),
           hook: trimText(script.hook, 82),
           shots: script.demoSteps.slice(0, 4).map((step, index) => ({
@@ -584,8 +591,10 @@ function mapScriptToRemotionProps(
             script.subhook ?? "Here is the product moment to show.",
             90,
           ),
+          ...(ugcClip ? { ugcClip } : {}),
         },
       });
+    }
     case "slideshow":
       return validateRemotionProps({
         ...common,
@@ -612,7 +621,10 @@ function mapScriptToRemotionProps(
           accent: theme.secondary,
         },
         wallOfText: {
-          body: script.lines.slice(0, 5).map((line) => trimText(line, 92)).join("\n"),
+          body: script.lines
+            .slice(0, 5)
+            .map((line) => trimText(line, 92))
+            .join("\n"),
           broll: [
             {
               label: firstNicheTag(brandProfile) ?? "Customer proof",
@@ -656,9 +668,10 @@ function mapScriptToContentItemScript(
   if (format === "greenscreen_meme") {
     return {
       ...base,
-      lines: [script.memeCaption ?? script.hook, script.reactionLabel ?? ""].filter(
-        Boolean,
-      ),
+      lines: [
+        script.memeCaption ?? script.hook,
+        script.reactionLabel ?? "",
+      ].filter(Boolean),
     };
   }
 
@@ -820,6 +833,143 @@ function getStringArray(value: unknown, maxItems: number) {
   return items.slice(0, maxItems);
 }
 
+function hookDemoUgcClip({
+  contentItemId,
+  hook,
+  nicheTags,
+}: {
+  contentItemId: string;
+  hook: string;
+  nicheTags: string[];
+}) {
+  if (UGC_VIDEO_ASSETS.length === 0) {
+    return undefined;
+  }
+
+  const preferredRole = preferredUgcRole(hook);
+  const scoredAssets = UGC_VIDEO_ASSETS.map((asset) => ({
+    asset,
+    score: scoreUgcClip(asset, nicheTags, preferredRole),
+  }));
+  const topScore = Math.max(...scoredAssets.map(({ score }) => score));
+  const topPool = scoredAssets
+    .filter(({ score }) => score === topScore)
+    .map(({ asset }) => asset);
+  const selected = pickAsset(topPool, contentItemId);
+
+  if (!selected) {
+    return undefined;
+  }
+
+  return {
+    label: `${selected.role} UGC clip`,
+    role: selected.role,
+    src: assetUri(selected, "placeholder:persona"),
+  };
+}
+
+function scoreUgcClip(
+  asset: UgcClipAsset,
+  nicheTags: string[],
+  preferredRole: ReturnType<typeof preferredUgcRole>,
+) {
+  const normalizedNicheTags = nicheTags
+    .map(normalizeUgcMatchToken)
+    .filter(Boolean);
+  const tagScore = asset.tags.reduce(
+    (score, tag) =>
+      score +
+      normalizedNicheTags.filter((nicheTag) =>
+        ugcTagsMatch(normalizeUgcMatchToken(tag), nicheTag),
+      ).length *
+        2,
+    0,
+  );
+
+  return tagScore + (asset.role === preferredRole ? 1 : 0);
+}
+
+function normalizeUgcMatchToken(input: string) {
+  return input
+    .replace(/^#+/, "")
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function ugcTagsMatch(left: string, right: string) {
+  if (!left || !right) {
+    return false;
+  }
+
+  return singularishUgcTag(left).some((leftVariant) =>
+    singularishUgcTag(right).some(
+      (rightVariant) =>
+        leftVariant.includes(rightVariant) ||
+        rightVariant.includes(leftVariant),
+    ),
+  );
+}
+
+function singularishUgcTag(input: string) {
+  const variants = new Set([input]);
+
+  if (input.endsWith("ies") && input.length > 4) {
+    variants.add(`${input.slice(0, -3)}y`);
+  }
+
+  if (input.endsWith("es") && input.length > 3) {
+    variants.add(input.slice(0, -2));
+  }
+
+  if (input.endsWith("s") && input.length > 3) {
+    variants.add(input.slice(0, -1));
+  }
+
+  return [...variants];
+}
+
+function preferredUgcRole(
+  hook: string,
+): Extract<UgcClipAsset["role"], "reaction" | "talking"> {
+  const normalized = hook.toLowerCase();
+
+  return /\bpov\b|\bme\s|\bwhen\s/u.test(normalized) ? "reaction" : "talking";
+}
+
+function hookDemoCaptures(brandProfile: BrandProfileRow) {
+  const captures = brandProfile.siteCaptures ?? [];
+
+  return [...captures]
+    .filter(isUsableSiteCapture)
+    .sort((left, right) => {
+      const leftKind = left.kind ?? "image";
+      const rightKind = right.kind ?? "image";
+
+      if (leftKind !== rightKind) {
+        return leftKind === "video" ? -1 : 1;
+      }
+
+      if (left.viewport === right.viewport) {
+        return 0;
+      }
+
+      return left.viewport === "mobile" ? -1 : 1;
+    })
+    .slice(0, 4)
+    .map((capture) => ({
+      kind: capture.kind ?? "image",
+      label: capture.label,
+      src: capture.url || `/api/videos/${capture.key}`,
+    }));
+}
+
+function isUsableSiteCapture(
+  capture: BrandProfileSiteCapture,
+): capture is BrandProfileSiteCapture {
+  return Boolean(capture.key && capture.label && (capture.url || capture.key));
+}
+
 function assetSeed(
   brandProfileId: BrandProfileRow["id"],
   format: RenderableContentFormat,
@@ -915,7 +1065,10 @@ function trimText(input: string, maxLength: number) {
 }
 
 function cleanText(input: string) {
-  return input.replace(/^[-*\d.]+\s*/, "").replace(/\s+/g, " ").trim();
+  return input
+    .replace(/^[-*\d.]+\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function hostnameFromUrl(url: string) {

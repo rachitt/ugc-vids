@@ -24,6 +24,19 @@ const AssetSchema = z.object({
   label: z.string().optional(),
 });
 
+const UgcClipRoleSchema = z.enum([
+  "talking",
+  "reaction",
+  "selfie",
+  "routine",
+  "lifestyle",
+  "demo",
+]);
+
+const UgcClipSchema = AssetSchema.extend({
+  role: UgcClipRoleSchema.optional(),
+});
+
 const MusicSchema = z.object({
   src: z.string().min(1),
   volume: z.number().min(0).max(1).default(0.08),
@@ -77,6 +90,17 @@ const GreenscreenMemeSchema = z.object({
 const HookDemoSchema = z.object({
   hook: z.string().min(1),
   subhook: z.string().optional(),
+  ugcClip: UgcClipSchema.optional(),
+  captures: z
+    .array(
+      z.object({
+        kind: z.enum(["image", "video"]).default("image"),
+        src: z.string().min(1),
+        label: z.string().min(1),
+      }),
+    )
+    .max(6)
+    .optional(),
   shots: z
     .array(
       z.object({
@@ -117,7 +141,10 @@ export const RemotionPropsSchema = z
     hookDemo: HookDemoSchema.optional(),
   })
   .superRefine((props, context) => {
-    const requiredByFormat: Record<RenderableContentFormat, keyof typeof props> = {
+    const requiredByFormat: Record<
+      RenderableContentFormat,
+      keyof typeof props
+    > = {
       greenscreen_meme: "greenscreenMeme",
       hook_demo: "hookDemo",
       slideshow: "slideshow",

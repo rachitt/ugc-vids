@@ -219,7 +219,9 @@ export function LibraryGrid({ items, saveLimit }: LibraryGridProps) {
                   </p>
                   {item.script.hashtags && item.script.hashtags.length > 0 ? (
                     <p className="mt-3 line-clamp-2 text-xs leading-5 text-muted-foreground">
-                      {item.script.hashtags.map((tag) => `#${tag}`).join(" ")}
+                      {item.script.hashtags
+                        .map((tag) => `#${tag.replace(/^#+/, "")}`)
+                        .join(" ")}
                     </p>
                   ) : null}
                   <div className="mt-auto flex flex-wrap gap-2 pt-5">

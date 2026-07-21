@@ -22,6 +22,7 @@ import { parseCompositionProps } from "./props";
 
 const CAPTION_BAR_HEIGHT = 236;
 const CAPTION_BAR_BOTTOM = BOTTOM_SAFE + 24;
+const CAPTION_MAX_LINES = 3;
 const PERSONA_WIDTH = 860;
 const PERSONA_HEIGHT = 1120;
 
@@ -30,7 +31,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 function captionFontSize(text: string): number {
-  return clamp(64 - Math.max(0, text.length - 34) * 0.62, 44, 64);
+  return clamp(62 - Math.max(0, text.length - 44) * 0.42, 36, 62);
 }
 
 export function GreenscreenMeme(inputProps: RemotionProps) {
@@ -266,12 +267,12 @@ export function GreenscreenMeme(inputProps: RemotionProps) {
             fontFamily: remotionFontFamily,
             fontSize: captionFontSize(meme.caption),
             fontWeight: 700,
-            lineHeight: 1.04,
+            lineHeight: 1.02,
             overflow: "hidden",
             textAlign: "center",
             textShadow: "0 4px 18px rgba(0,0,0,0.34)",
             WebkitBoxOrient: "vertical",
-            WebkitLineClamp: 2,
+            WebkitLineClamp: CAPTION_MAX_LINES,
           }}
         >
           {meme.caption}
