@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 import { generateMixedContentBatch } from "@/lib/content/batch";
+import { getActiveWorkspaceContext } from "@/lib/workspaces";
 
 export const runtime = "nodejs";
 
@@ -24,17 +25,27 @@ export async function POST(request: Request) {
     );
   }
 
-  const workspaceId = getString(body.workspaceId);
   const brandProfileId = getString(body.brandProfileId);
 
-  if (!workspaceId || !brandProfileId) {
+  if (!brandProfileId) {
     return NextResponse.json(
-      { error: "workspaceId and brandProfileId are required." },
+      { error: "brandProfileId is required." },
       { status: 400 },
     );
   }
 
   try {
+    const { workspace } = await getActiveWorkspaceContext();
+    const workspaceId = workspace.id;
+    const requestedWorkspaceId = getString(body.workspaceId);
+
+    if (requestedWorkspaceId && requestedWorkspaceId !== workspaceId) {
+      return NextResponse.json(
+        { error: "workspaceId must match the active workspace." },
+        { status: 400 },
+      );
+    }
+
     const result = await generateMixedContentBatch({
       brandProfileId,
       totalCount: getNumber(body.totalCount) ?? 12,
@@ -47,10 +58,7 @@ export async function POST(request: Request) {
       status: result.generatedCount > 0 ? 200 : 500,
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: toErrorMessage(error) },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: toErrorMessage(error) }, { status: 500 });
   }
 }
 

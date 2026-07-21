@@ -6,12 +6,12 @@ import { redirect } from "next/navigation";
 
 import { batchGenerationRequester } from "@/lib/content/generation-contract";
 import {
-  getDefaultGenerationWorkspaceId,
   promptRecipeForTrendTemplate,
   serializePromptRecipeForGeneration,
   TREND_REMIX_VARIANT_COUNT,
 } from "@/lib/content/trend-generation";
 import { getTrendTemplateById } from "@/lib/trends/queries";
+import { getActiveWorkspaceContext } from "@/lib/workspaces";
 
 type TrendingRedirectTarget =
   | "/trending?remix=created&count=0"
@@ -53,11 +53,7 @@ export async function remixTrendAction(formData: FormData) {
     redirectToTrending("/trending?remix=missing-trend");
   }
 
-  const workspaceId = await getDefaultGenerationWorkspaceId();
-
-  if (!workspaceId) {
-    redirectToTrending("/trending?remix=missing-workspace");
-  }
+  const { workspace } = await getActiveWorkspaceContext();
 
   const promptRecipe = promptRecipeForTrendTemplate(trendTemplate);
   const result = await batchGenerationRequester.requestGeneration({
@@ -67,7 +63,7 @@ export async function remixTrendAction(formData: FormData) {
     source: "trending_remix",
     targetCount: TREND_REMIX_VARIANT_COUNT,
     trendTemplateId: trendTemplate.id,
-    workspaceId,
+    workspaceId: workspace.id,
   });
 
   if (result.status === "blocked") {

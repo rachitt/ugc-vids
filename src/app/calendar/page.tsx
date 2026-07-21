@@ -8,11 +8,8 @@ import type {
 } from "@/app/calendar/types";
 import { getContentFormatLabel } from "@/lib/content/formats";
 import { db } from "@/lib/db";
-import { calendarSlots, contentItems, workspaces } from "@/lib/db/schema";
-import {
-  getDefaultWorkspaceName,
-  hasDefaultWorkspaceNameOverride,
-} from "@/lib/workspaces";
+import { calendarSlots, contentItems } from "@/lib/db/schema";
+import { getActiveWorkspaceContext } from "@/lib/workspaces";
 
 export const dynamic = "force-dynamic";
 
@@ -40,31 +37,7 @@ export default async function CalendarPage() {
 
 async function getCalendarData(): Promise<CalendarData> {
   try {
-    const [workspace] = hasDefaultWorkspaceNameOverride()
-      ? await db
-          .select({
-            id: workspaces.id,
-            name: workspaces.name,
-          })
-          .from(workspaces)
-          .where(eq(workspaces.name, getDefaultWorkspaceName()))
-          .limit(1)
-      : await db
-          .select({
-            id: workspaces.id,
-            name: workspaces.name,
-          })
-          .from(workspaces)
-          .orderBy(desc(workspaces.createdAt))
-          .limit(1);
-
-    if (!workspace) {
-      return {
-        workspace: null,
-        contentItems: [],
-        slots: [],
-      };
-    }
+    const { workspace } = await getActiveWorkspaceContext();
 
     const itemRows = await db
       .select()

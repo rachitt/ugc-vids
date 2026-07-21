@@ -81,7 +81,7 @@ export async function analyzeBrandProfile(
   scrape: BrandWebsiteScrape,
 ): Promise<BrandProfileAnalysis> {
   const output = await runClaudeAgentTask<unknown>({
-    maxTurns: 1,
+    maxTurns: 3,
     outputSchema: BRAND_PROFILE_SCHEMA,
     prompt: buildBrandProfilePrompt(scrape),
     systemPrompt: SYSTEM_PROMPT,

@@ -1,11 +1,12 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { Sparkles, Tag } from "lucide-react";
 
 import { BrandIntakeForm } from "@/components/brand-intake-form";
 import { db } from "@/lib/db";
 import { brandProfiles } from "@/lib/db/schema";
+import { getActiveWorkspaceContext } from "@/lib/workspaces";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,8 @@ export default async function Home({ searchParams }: HomeProps) {
   const params = await searchParams;
   const error =
     typeof params?.error === "string" ? params.error : params?.error?.[0];
-  const recentProfiles = await getRecentBrandProfiles();
+  const { workspace } = await getActiveWorkspaceContext();
+  const recentProfiles = await getRecentBrandProfiles(workspace.id);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -105,7 +107,7 @@ export default async function Home({ searchParams }: HomeProps) {
   );
 }
 
-async function getRecentBrandProfiles() {
+async function getRecentBrandProfiles(workspaceId: string) {
   return db
     .select({
       audience: brandProfiles.audience,
@@ -115,6 +117,7 @@ async function getRecentBrandProfiles() {
       url: brandProfiles.url,
     })
     .from(brandProfiles)
+    .where(eq(brandProfiles.workspaceId, workspaceId))
     .orderBy(desc(brandProfiles.updatedAt))
     .limit(6);
 }
