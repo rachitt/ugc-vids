@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   index,
   integer,
@@ -282,6 +283,10 @@ export const contentItems = pgTable(
     ),
     trendTemplateId: uuid("trend_template_id").references(
       () => trendTemplates.id,
+      { onDelete: "set null" },
+    ),
+    variantOf: uuid("variant_of").references(
+      (): AnyPgColumn => contentItems.id,
       { onDelete: "set null" },
     ),
     format: contentFormat("format").notNull(),

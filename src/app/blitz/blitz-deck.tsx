@@ -4,6 +4,7 @@ import type { CSSProperties, PointerEvent } from "react";
 import { useMemo, useState, useTransition } from "react";
 import { Heart, Sparkles, X } from "lucide-react";
 
+import { requestContentVariants } from "@/app/actions/variants";
 import { Button } from "@/components/ui/button";
 import { ContentThumbnail } from "@/components/content/content-thumbnail";
 import { FormatBadge } from "@/components/content/format-badge";
@@ -63,7 +64,11 @@ export function BlitzDeck({
   const [generationMessage, setGenerationMessage] = useState<string | null>(
     null,
   );
+  const [lastSavedItem, setLastSavedItem] =
+    useState<ContentItemSummary | null>(null);
+  const [variantMessage, setVariantMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isVariantPending, startVariantTransition] = useTransition();
   const currentCard = cards[0];
   const visibleCards = useMemo(() => cards.slice(0, 3), [cards]);
   const deckIsLow = cards.length <= lowDeckThreshold;
@@ -90,7 +95,17 @@ export function BlitzDeck({
 
     startTransition(() => {
       void action(item.id)
-        .then((result) => restoreCard(item, result))
+        .then((result) => {
+          if (!result.ok) {
+            restoreCard(item, result);
+            return;
+          }
+
+          if (direction === "right") {
+            setLastSavedItem(item);
+            setVariantMessage(null);
+          }
+        })
         .catch(() => {
           setCards((current) =>
             current.some((card) => card.id === item.id)
@@ -174,6 +189,24 @@ export function BlitzDeck({
     });
   }
 
+  function requestSavedVariants(item: ContentItemSummary) {
+    setVariantMessage("Requesting variants...");
+
+    startVariantTransition(() => {
+      void requestContentVariants({
+        contentItemId: item.id,
+        count: 2,
+        source: "blitz_deck",
+      })
+        .then((result) =>
+          setVariantMessage(result.ok ? result.message : result.error),
+        )
+        .catch(() =>
+          setVariantMessage("The variant request could not be recorded."),
+        );
+    });
+  }
+
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(320px,440px)_1fr] lg:items-start">
       <section className="flex flex-col items-center gap-5">
@@ -214,6 +247,7 @@ export function BlitzDeck({
                       ? "cursor-grab active:cursor-grabbing"
                       : "pointer-events-none"
                   }`}
+                  data-blitz-content-item-id={item.id}
                   key={item.id}
                   onPointerCancel={(event) => handlePointerEnd(event, item)}
                   onPointerDown={(event) => handlePointerDown(event, item)}
@@ -314,6 +348,38 @@ export function BlitzDeck({
             subscription exists.
           </p>
         </div>
+
+        {lastSavedItem ? (
+          <div className="rounded-lg border bg-card p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Saved winner
+                </p>
+                <h2 className="mt-2 line-clamp-2 font-semibold tracking-normal">
+                  {getScriptHook(lastSavedItem.script)}
+                </h2>
+              </div>
+              <Heart className="mt-1 size-4 text-secondary" aria-hidden="true" />
+            </div>
+            <Button
+              className="mt-4 w-full"
+              disabled={isVariantPending}
+              onClick={() => requestSavedVariants(lastSavedItem)}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              <Sparkles className="size-4" aria-hidden="true" />
+              More like this
+            </Button>
+            {variantMessage ? (
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                {variantMessage}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         {deckIsLow ? (
           <div className="rounded-lg border bg-card p-5">
